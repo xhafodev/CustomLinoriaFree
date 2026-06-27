@@ -133,25 +133,33 @@ function Library:MakeGhostDraggable(Instance, DragHandle)
     DragHandle.Active = true;
 
     local Ghost = Library:Create('Frame', {
-        BackgroundTransparency = 1;
-        BorderColor3 = Library.AccentColor;
-        BorderSizePixel = 1;
+        Name = 'DragGhost';
+        BackgroundColor3 = Library.AccentColor;
+        BackgroundTransparency = 0.88;
+        BorderSizePixel = 0;
         Visible = false;
-        ZIndex = (Instance.ZIndex or 1) + 200;
+        ZIndex = 10000;
         Parent = ScreenGui;
     });
 
-    Library:AddToRegistry(Ghost, {
-        BorderColor3 = 'AccentColor';
+    local GhostStroke = Library:Create('UIStroke', {
+        Color = Library.AccentColor;
+        Thickness = 2;
+        LineJoinMode = Enum.LineJoinMode.Round;
+        Parent = Ghost;
     });
 
-    local function GetPosition(ObjPos)
-        return UDim2.new(
-            0,
-            Mouse.X - ObjPos.X + (Instance.Size.X.Offset * Instance.AnchorPoint.X),
-            0,
-            Mouse.Y - ObjPos.Y + (Instance.Size.Y.Offset * Instance.AnchorPoint.Y)
-        );
+    Library:AddToRegistry(Ghost, {
+        BackgroundColor3 = 'AccentColor';
+    });
+
+    Library:AddToRegistry(GhostStroke, {
+        Color = 'AccentColor';
+    });
+
+    local function SyncGhost()
+        Ghost.AnchorPoint = Vector2.new(0, 0);
+        Ghost.Size = UDim2.fromOffset(Instance.AbsoluteSize.X, Instance.AbsoluteSize.Y);
     end;
 
     DragHandle.InputBegan:Connect(function(Input)
@@ -168,18 +176,25 @@ function Library:MakeGhostDraggable(Instance, DragHandle)
             Mouse.Y - Instance.AbsolutePosition.Y
         );
 
-        Ghost.Size = Instance.Size;
-        Ghost.AnchorPoint = Instance.AnchorPoint;
-        Ghost.Position = Instance.Position;
+        SyncGhost();
+        Ghost.Position = UDim2.fromOffset(Instance.AbsolutePosition.X, Instance.AbsolutePosition.Y);
         Ghost.Visible = true;
 
         while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-            Ghost.Position = GetPosition(ObjPos);
-            Ghost.Size = Instance.Size;
+            SyncGhost();
+            Ghost.Position = UDim2.fromOffset(
+                Mouse.X - ObjPos.X,
+                Mouse.Y - ObjPos.Y
+            );
             RenderStepped:Wait();
         end;
 
-        Instance.Position = Ghost.Position;
+        local NewTopLeft = Ghost.AbsolutePosition;
+        Instance.Position = UDim2.fromOffset(
+            NewTopLeft.X + Instance.AbsoluteSize.X * Instance.AnchorPoint.X,
+            NewTopLeft.Y + Instance.AbsoluteSize.Y * Instance.AnchorPoint.Y
+        );
+
         Ghost.Visible = false;
 
         if Library.WindowHolder == Instance then
