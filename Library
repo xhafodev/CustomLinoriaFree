@@ -44,6 +44,19 @@ local Library = {
 
     FontName = 'Montserrat';
     FontRegistry = {};
+    FontNames = {
+        'Default',
+        'Montserrat',
+        'Smallest Pixel',
+        'Inter',
+        'Roboto',
+        'Open Sans',
+        'Poppins',
+        'Source Sans',
+        'Nunito',
+        'Ubuntu',
+        'Oswald',
+    };
 
     GradientCycle = 0;
 
@@ -107,29 +120,64 @@ end;
 function Library:GetFontFace()
     local FontName = Library.FontName or 'Montserrat';
 
-    if FontName == 'Default' then
-        return Font.fromEnum(Enum.Font.Code);
-    end;
+    local Catalog = {
+        ['Default'] = function()
+            return Font.fromEnum(Enum.Font.Code);
+        end;
+        ['Montserrat'] = function()
+            return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+        end;
+        ['Smallest Pixel'] = function()
+            return Font.fromEnum(Enum.Font.Arcade);
+        end;
+        ['Inter'] = function()
+            return Font.new('rbxasset://fonts/families/Inter.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end;
+        ['Roboto'] = function()
+            return Font.new('rbxasset://fonts/families/Roboto.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end;
+        ['Open Sans'] = function()
+            return Font.new('rbxasset://fonts/families/OpenSans.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end;
+        ['Poppins'] = function()
+            return Font.new('rbxasset://fonts/families/Poppins.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+        end;
+        ['Source Sans'] = function()
+            return Font.new('rbxasset://fonts/families/SourceSansPro.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end;
+        ['Nunito'] = function()
+            return Font.new('rbxasset://fonts/families/Nunito.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end;
+        ['Ubuntu'] = function()
+            return Font.new('rbxasset://fonts/families/Ubuntu.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end;
+        ['Oswald'] = function()
+            return Font.new('rbxasset://fonts/families/Oswald.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end;
+    };
 
-    if FontName == 'Smallest Pixel' then
-        return Font.fromEnum(Enum.Font.Arcade);
-    end;
-
-    return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+    local Builder = Catalog[FontName] or Catalog.Montserrat;
+    return Builder();
 end;
 
 function Library:GetLegacyFont()
     local FontName = Library.FontName or 'Montserrat';
 
-    if FontName == 'Default' then
-        return Enum.Font.Code;
-    end;
+    local Catalog = {
+        ['Default'] = Enum.Font.Code;
+        ['Smallest Pixel'] = Enum.Font.Arcade;
+        ['Montserrat'] = Enum.Font.GothamMedium;
+        ['Inter'] = Enum.Font.Gotham;
+        ['Roboto'] = Enum.Font.Gotham;
+        ['Open Sans'] = Enum.Font.Gotham;
+        ['Poppins'] = Enum.Font.GothamMedium;
+        ['Source Sans'] = Enum.Font.Gotham;
+        ['Nunito'] = Enum.Font.GothamMedium;
+        ['Ubuntu'] = Enum.Font.Gotham;
+        ['Oswald'] = Enum.Font.GothamBold;
+    };
 
-    if FontName == 'Smallest Pixel' then
-        return Enum.Font.Arcade;
-    end;
-
-    return Enum.Font.GothamMedium;
+    return Catalog[FontName] or Enum.Font.GothamMedium;
 end;
 
 function Library:ApplyFontToInstance(Instance)
@@ -491,6 +539,21 @@ function Library:AddToolTip(InfoStr, HoverInstance)
         Tooltip.Visible = false
     end)
 end
+
+function Library:OnToggleHighlight(Region, Outer, Inner, Toggle)
+    Region.MouseEnter:Connect(function()
+        Outer.BorderColor3 = Library.AccentColor;
+
+        if not Toggle.Value then
+            Inner.BorderColor3 = Library.AccentColor;
+        end;
+    end);
+
+    Region.MouseLeave:Connect(function()
+        Outer.BorderColor3 = Color3.new(0, 0, 0);
+        Toggle:Display();
+    end);
+end;
 
 function Library:OnHighlight(HighlightInstance, Instance, Properties, PropertiesDefault)
     HighlightInstance.MouseEnter:Connect(function()
@@ -1182,6 +1245,7 @@ do
         local ButtonOuter = Library:Create('Frame', {
             BorderColor3 = Color3.new(0, 0, 0);
             Size = UDim2.new(1, -4, 0, 20);
+            Active = true;
             ZIndex = 5;
             Parent = Container;
         });
@@ -1492,11 +1556,20 @@ do
         local Groupbox = self;
         local Container = Groupbox.Container;
 
-        local ToggleOuter = Library:Create('Frame', {
-            BorderColor3 = Color3.new(0, 0, 0);
-            Size = UDim2.new(0, 13, 0, 13);
+        local ToggleRow = Library:Create('Frame', {
+            BackgroundTransparency = 1;
+            Size = UDim2.new(1, -4, 0, 18);
+            Active = true;
             ZIndex = 5;
             Parent = Container;
+        });
+
+        local ToggleOuter = Library:Create('Frame', {
+            BorderColor3 = Color3.new(0, 0, 0);
+            Position = UDim2.new(0, 0, 0, 2);
+            Size = UDim2.new(0, 13, 0, 13);
+            ZIndex = 6;
+            Parent = ToggleRow;
         });
 
         Library:AddToRegistry(ToggleOuter, {
@@ -1508,7 +1581,7 @@ do
             BorderColor3 = Library.OutlineColor;
             BorderMode = Enum.BorderMode.Inset;
             Size = UDim2.new(1, 0, 1, 0);
-            ZIndex = 6;
+            ZIndex = 7;
             Parent = ToggleOuter;
         });
 
@@ -1518,13 +1591,13 @@ do
         });
 
         local ToggleLabel = Library:CreateLabel({
-            Size = UDim2.new(0, 216, 1, 0);
-            Position = UDim2.new(1, 6, 0, 0);
+            Size = UDim2.new(1, -19, 1, 0);
+            Position = UDim2.new(0, 19, 0, 0);
             TextSize = 14;
             Text = Info.Text;
             TextXAlignment = Enum.TextXAlignment.Left;
-            ZIndex = 6;
-            Parent = ToggleInner;
+            ZIndex = 7;
+            Parent = ToggleRow;
         });
 
         Library:Create('UIListLayout', {
@@ -1535,24 +1608,12 @@ do
             Parent = ToggleLabel;
         });
 
-        local ToggleRegion = Library:Create('Frame', {
-            BackgroundTransparency = 1;
-            Size = UDim2.new(0, 170, 1, 0);
-            ZIndex = 8;
-            Parent = ToggleOuter;
-        });
-
-        Library:OnHighlight(ToggleRegion, ToggleOuter,
-            { BorderColor3 = 'AccentColor' },
-            { BorderColor3 = 'Black' }
-        );
-
         function Toggle:UpdateColors()
             Toggle:Display();
         end;
 
         if type(Info.Tooltip) == 'string' then
-            Library:AddToolTip(Info.Tooltip, ToggleRegion)
+            Library:AddToolTip(Info.Tooltip, ToggleRow)
         end
 
         function Toggle:Display()
@@ -1562,6 +1623,8 @@ do
             Library.RegistryMap[ToggleInner].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
             Library.RegistryMap[ToggleInner].Properties.BorderColor3 = Toggle.Value and 'AccentColorDark' or 'OutlineColor';
         end;
+
+        Library:OnToggleHighlight(ToggleRow, ToggleOuter, ToggleInner, Toggle);
 
         function Toggle:OnChanged(Func)
             Toggle.Changed = Func;
@@ -1586,9 +1649,9 @@ do
             end;
         end;
 
-        ToggleRegion.InputBegan:Connect(function(Input)
+        ToggleRow.InputBegan:Connect(function(Input)
             if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame() then
-                Toggle:SetValue(not Toggle.Value) -- Why was it not like this from the start?
+                Toggle:SetValue(not Toggle.Value);
                 Library:AttemptSave();
             end;
         end);
@@ -1894,6 +1957,7 @@ do
         local DropdownOuter = Library:Create('Frame', {
             BorderColor3 = Color3.new(0, 0, 0);
             Size = UDim2.new(1, -4, 0, 20);
+            Active = true;
             ZIndex = 5;
             Parent = Container;
         });
@@ -2880,11 +2944,46 @@ function Library:SetWatermarkVisibility(Bool)
 end;
 
 function Library:SetWatermark(Text)
-    Library.WatermarkText.RichText = true;
-    local PlainText = Text:gsub('<[^>]+>', '');
-    local X = Library:GetTextBounds(PlainText, Enum.Font.Code, 14);
-    Library.Watermark.Size = UDim2.new(0, math.max(X + 16, 110), 0, 24);
+    if not Library.WatermarkText then
+        return;
+    end;
+
+    Library.WatermarkText.RichText = false;
+    local X = Library:GetTextBounds(Text, nil, 14);
+    Library.Watermark.Size = UDim2.new(0, math.max(X + 16, 280), 0, 24);
     Library.WatermarkText.Text = Text;
+end;
+
+function Library:StartWatermark()
+    if Library.WatermarkConnection then
+        Library:SetWatermarkVisibility(true);
+        return;
+    end;
+
+    local FrameCount = 0;
+    local LastTick = tick();
+    local FPS = 0;
+
+    Library:SetWatermarkVisibility(true);
+    Library.Watermark.Position = UDim2.new(0, 12, 0, 12);
+
+    Library.WatermarkConnection = RenderStepped:Connect(function()
+        FrameCount = FrameCount + 1;
+
+        local Now = tick();
+        if Now - LastTick >= 1 then
+            FPS = FrameCount;
+            FrameCount = 0;
+            LastTick = Now;
+        end;
+
+        local TimeText = os.date('%H:%M:%S');
+        local UID = LocalPlayer.UserId;
+
+        Library:SetWatermark(string.format('chadvision | %d FPS | %s | %d', FPS, TimeText, UID));
+    end);
+
+    Library:GiveSignal(Library.WatermarkConnection);
 end;
 
 function Library:Notify(Text, Time)
@@ -3217,8 +3316,10 @@ function Library:CreateWindow(...)
             ScrollBarThickness = 3;
             ScrollBarImageColor3 = Library.AccentColor;
             CanvasSize = UDim2.new();
+            Active = false;
+            ScrollingEnabled = true;
             ClipsDescendants = true;
-            ZIndex = 1;
+            ZIndex = 2;
             Parent = BoxInner;
         });
 
@@ -3229,7 +3330,7 @@ function Library:CreateWindow(...)
         local Container = Library:Create('Frame', {
             BackgroundTransparency = 1;
             Size = UDim2.new(1, 0, 0, 0);
-            ZIndex = 1;
+            ZIndex = 3;
             Parent = Scroll;
         });
 
@@ -3561,15 +3662,15 @@ function Library:CreateWindow(...)
     local ModalElement = Library:Create('TextButton', {
         BackgroundTransparency = 1;
         Size = UDim2.new(0, 0, 0, 0);
-        Visible = true;
+        Visible = false;
         Text = '';
         Modal = false;
+        Active = false;
         Parent = ScreenGui;
     });
 
     function Library.Toggle()
         Outer.Visible = not Outer.Visible;
-        ModalElement.Modal = Outer.Visible;
 
         if not Outer.Visible then
             Library:HideColorPicker();
@@ -3645,9 +3746,7 @@ function Library:CreateWindow(...)
     Window.Holder = Outer;
     Library.WindowHolder = Outer;
 
-    Library:SetWatermark(Library.BrandRichText);
-    Library:SetWatermarkVisibility(true);
-    Library.Watermark.Position = UDim2.new(0, 12, 0, 12);
+    Library:StartWatermark();
 
     return Window;
 end;
