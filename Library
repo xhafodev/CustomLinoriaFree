@@ -23,6 +23,41 @@ local Options = {};
 getgenv().Toggles = Toggles;
 getgenv().Options = Options;
 
+local FontCatalog = {
+    ['Default'] = { Legacy = Enum.Font.Code, Build = function() return Font.fromEnum(Enum.Font.Code) end },
+    ['Montserrat'] = { Legacy = Enum.Font.GothamMedium, Build = function() return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal) end },
+    ['Roboto'] = { Legacy = Enum.Font.Gotham, Build = function() return Font.new('rbxasset://fonts/families/Roboto.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal) end },
+    ['Inter'] = { Legacy = Enum.Font.GothamMedium, Build = function() return Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal) end },
+    ['Source Sans'] = { Legacy = Enum.Font.SourceSans, Build = function() return Font.new('rbxasset://fonts/families/SourceSansPro.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal) end },
+    ['Open Sans'] = { Legacy = Enum.Font.Gotham, Build = function() return Font.new('rbxasset://fonts/families/OpenSans.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal) end },
+    ['Gotham'] = { Legacy = Enum.Font.GothamMedium, Build = function() return Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal) end },
+    ['Poppins'] = { Legacy = Enum.Font.GothamMedium, Build = function() return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal) end },
+    ['Nunito'] = { Legacy = Enum.Font.Gotham, Build = function() return Font.new('rbxasset://fonts/families/Roboto.json', Enum.FontWeight.Light, Enum.FontStyle.Normal) end },
+    ['Ubuntu'] = { Legacy = Enum.Font.Gotham, Build = function() return Font.new('rbxasset://fonts/families/Ubuntu.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal) end },
+    ['Inconsolata'] = { Legacy = Enum.Font.Code, Build = function() return Font.new('rbxasset://fonts/families/Inconsolata.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal) end },
+    ['Smallest Pixel'] = { Legacy = Enum.Font.Arcade, Build = function() return Font.fromEnum(Enum.Font.Arcade) end },
+    ['Merriweather'] = { Legacy = Enum.Font.Merriweather, Build = function() return Font.new('rbxasset://fonts/families/Merriweather.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal) end },
+    ['Arimo'] = { Legacy = Enum.Font.Arimo, Build = function() return Font.new('rbxasset://fonts/families/Arimo.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal) end },
+    ['Arial'] = { Legacy = Enum.Font.Arial, Build = function() return Font.fromEnum(Enum.Font.Arial) end },
+    ['Builder Sans'] = { Legacy = Enum.Font.BuilderSans, Build = function() return Font.fromEnum(Enum.Font.BuilderSans) end },
+    ['Garamond'] = { Legacy = Enum.Font.Garamond, Build = function() return Font.fromEnum(Enum.Font.Garamond) end },
+    ['Bodoni'] = { Legacy = Enum.Font.Bodoni, Build = function() return Font.fromEnum(Enum.Font.Bodoni) end },
+    ['Antique'] = { Legacy = Enum.Font.Antique, Build = function() return Font.fromEnum(Enum.Font.Antique) end },
+    ['Source Sans Bold'] = { Legacy = Enum.Font.SourceSansBold, Build = function() return Font.fromEnum(Enum.Font.SourceSansBold) end },
+    ['Source Sans Light'] = { Legacy = Enum.Font.SourceSansLight, Build = function() return Font.fromEnum(Enum.Font.SourceSansLight) end },
+    ['Gotham Black'] = { Legacy = Enum.Font.GothamBlack, Build = function() return Font.fromEnum(Enum.Font.GothamBlack) end },
+    ['Gotham Bold'] = { Legacy = Enum.Font.GothamBold, Build = function() return Font.fromEnum(Enum.Font.GothamBold) end },
+    ['JetBrains Mono'] = { Legacy = Enum.Font.Code, Build = function() return Font.new('rbxasset://fonts/families/Inconsolata.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal) end },
+    ['IBM Plex Sans'] = { Legacy = Enum.Font.SourceSansSemibold, Build = function() return Font.new('rbxasset://fonts/families/Roboto.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal) end },
+    ['Work Sans'] = { Legacy = Enum.Font.SourceSans, Build = function() return Font.new('rbxasset://fonts/families/OpenSans.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal) end },
+    ['DM Serif'] = { Legacy = Enum.Font.Merriweather, Build = function() return Font.new('rbxasset://fonts/families/Merriweather.json', Enum.FontWeight.Bold, Enum.FontStyle.Normal) end },
+};
+
+local FontNames = {
+    'Default', 'Montserrat', 'Roboto', 'Inter', 'Source Sans', 'Open Sans', 'Gotham', 'Poppins', 'Nunito', 'Ubuntu', 'Inconsolata', 'Smallest Pixel',
+    'Merriweather', 'Arimo', 'Arial', 'Builder Sans', 'Garamond', 'Bodoni', 'Antique', 'Source Sans Bold', 'Source Sans Light', 'Gotham Black', 'Gotham Bold', 'JetBrains Mono', 'IBM Plex Sans', 'Work Sans', 'DM Serif',
+};
+
 local Library = {
     Registry = {};
     RegistryMap = {};
@@ -44,21 +79,9 @@ local Library = {
 
     FontName = 'Montserrat';
     FontRegistry = {};
-
-    FontNames = {
-        'Default',
-        'Montserrat',
-        'Roboto',
-        'Inter',
-        'Source Sans',
-        'Open Sans',
-        'Gotham',
-        'Poppins',
-        'Nunito',
-        'Ubuntu',
-        'Inconsolata',
-        'Smallest Pixel',
-    };
+    FontCatalog = FontCatalog;
+    FontNames = FontNames;
+    LuaFolder = 'ChadvisionScripts';
 
     GradientCycle = 0;
 
@@ -120,49 +143,8 @@ function Library:Create(Class, Properties)
 end;
 
 function Library:GetFontFace()
-    local FontName = Library.FontName or 'Montserrat';
-
-    local Definitions = {
-        ['Default'] = function()
-            return Font.fromEnum(Enum.Font.Code);
-        end,
-        ['Montserrat'] = function()
-            return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end,
-        ['Roboto'] = function()
-            return Font.new('rbxasset://fonts/families/Roboto.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-        end,
-        ['Inter'] = function()
-            return Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end,
-        ['Source Sans'] = function()
-            return Font.new('rbxasset://fonts/families/SourceSansPro.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-        end,
-        ['Open Sans'] = function()
-            return Font.new('rbxasset://fonts/families/OpenSans.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-        end,
-        ['Gotham'] = function()
-            return Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end,
-        ['Poppins'] = function()
-            return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end,
-        ['Nunito'] = function()
-            return Font.new('rbxasset://fonts/families/Roboto.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-        end,
-        ['Ubuntu'] = function()
-            return Font.new('rbxasset://fonts/families/Ubuntu.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-        end,
-        ['Inconsolata'] = function()
-            return Font.new('rbxasset://fonts/families/Inconsolata.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-        end,
-        ['Smallest Pixel'] = function()
-            return Font.fromEnum(Enum.Font.Arcade);
-        end,
-    };
-
-    local Builder = Definitions[FontName] or Definitions.Montserrat;
-    local Success, Face = pcall(Builder);
+    local Entry = FontCatalog[Library.FontName or 'Montserrat'] or FontCatalog.Montserrat;
+    local Success, Face = pcall(Entry.Build);
 
     if Success and Face then
         return Face;
@@ -172,24 +154,8 @@ function Library:GetFontFace()
 end;
 
 function Library:GetLegacyFont()
-    local FontName = Library.FontName or 'Montserrat';
-
-    local Legacy = {
-        ['Default'] = Enum.Font.Code,
-        ['Montserrat'] = Enum.Font.GothamMedium,
-        ['Roboto'] = Enum.Font.Gotham,
-        ['Inter'] = Enum.Font.GothamMedium,
-        ['Source Sans'] = Enum.Font.SourceSans,
-        ['Open Sans'] = Enum.Font.Gotham,
-        ['Gotham'] = Enum.Font.GothamMedium,
-        ['Poppins'] = Enum.Font.GothamMedium,
-        ['Nunito'] = Enum.Font.Gotham,
-        ['Ubuntu'] = Enum.Font.Gotham,
-        ['Inconsolata'] = Enum.Font.Code,
-        ['Smallest Pixel'] = Enum.Font.Arcade,
-    };
-
-    return Legacy[FontName] or Enum.Font.GothamMedium;
+    local Entry = FontCatalog[Library.FontName or 'Montserrat'] or FontCatalog.Montserrat;
+    return Entry.Legacy or Enum.Font.Code;
 end;
 
 function Library:ApplyFontToInstance(Instance)
@@ -1576,6 +1542,130 @@ do
         Options[Idx] = Textbox;
 
         return Textbox;
+    end;
+
+    function Funcs:AddCodeEditor(Info)
+        Info = Info or {};
+        local Height = Info.Height or 280;
+
+        local Groupbox = self;
+        local Container = Groupbox.Container;
+
+        if Info.Text then
+            Library:CreateLabel({
+                Size = UDim2.new(1, 0, 0, 15);
+                TextSize = 14;
+                Text = Info.Text;
+                TextXAlignment = Enum.TextXAlignment.Left;
+                ZIndex = 5;
+                Parent = Container;
+            });
+
+            Groupbox:AddBlank(1);
+        end;
+
+        local EditorOuter = Library:Create('Frame', {
+            BorderColor3 = Color3.new(0, 0, 0);
+            Size = UDim2.new(1, -4, 0, Height);
+            ZIndex = 5;
+            Parent = Container;
+        });
+
+        Library:AddToRegistry(EditorOuter, {
+            BorderColor3 = 'Black';
+        });
+
+        local EditorInner = Library:Create('Frame', {
+            BackgroundColor3 = Library.MainColor;
+            BorderColor3 = Library.OutlineColor;
+            BorderMode = Enum.BorderMode.Inset;
+            Size = UDim2.new(1, 0, 1, 0);
+            ZIndex = 6;
+            Parent = EditorOuter;
+        });
+
+        Library:AddToRegistry(EditorInner, {
+            BackgroundColor3 = 'MainColor';
+            BorderColor3 = 'OutlineColor';
+        });
+
+        Library:OnHighlight(EditorOuter, EditorOuter,
+            { BorderColor3 = 'AccentColor' },
+            { BorderColor3 = 'Black' }
+        );
+
+        local Scroll = Library:Create('ScrollingFrame', {
+            BackgroundTransparency = 1;
+            BorderSizePixel = 0;
+            Size = UDim2.new(1, 0, 1, 0);
+            CanvasSize = UDim2.fromOffset(0, Height);
+            ScrollBarThickness = 4;
+            ZIndex = 7;
+            Parent = EditorInner;
+        });
+
+        local Box = Library:Create('TextBox', {
+            BackgroundTransparency = 1;
+            ClearTextOnFocus = false;
+            MultiLine = true;
+            Text = Info.Default or '';
+            PlaceholderText = Info.Placeholder or 'print("hello world")';
+            PlaceholderColor3 = Color3.fromRGB(130, 130, 130);
+            TextColor3 = Library.FontColor;
+            TextSize = 14;
+            TextXAlignment = Enum.TextXAlignment.Left;
+            TextYAlignment = Enum.TextYAlignment.Top;
+            Font = Enum.Font.Code;
+            Size = UDim2.new(1, -6, 0, Height);
+            Position = UDim2.fromOffset(3, 3);
+            ZIndex = 8;
+            Parent = Scroll;
+        });
+
+        Library:AddToRegistry(Box, {
+            TextColor3 = 'FontColor';
+        });
+
+        local function UpdateCanvas()
+            local LineCount = 1;
+
+            for _ in Box.Text:gmatch('\n') do
+                LineCount = LineCount + 1;
+            end;
+
+            local ContentHeight = math.max(Height, (LineCount * 18) + 12);
+            Box.Size = UDim2.new(1, -6, 0, ContentHeight);
+            Scroll.CanvasSize = UDim2.fromOffset(0, ContentHeight);
+        end;
+
+        UpdateCanvas();
+
+        Box:GetPropertyChangedSignal('Text'):Connect(UpdateCanvas);
+
+        local Editor = {
+            Value = Info.Default or '';
+            Type = 'CodeEditor';
+            Box = Box;
+        };
+
+        function Editor:GetValue()
+            return Box.Text;
+        end;
+
+        function Editor:SetValue(Text)
+            Box.Text = Text or '';
+            Editor.Value = Box.Text;
+            UpdateCanvas();
+        end;
+
+        Box:GetPropertyChangedSignal('Text'):Connect(function()
+            Editor.Value = Box.Text;
+        end);
+
+        Groupbox:AddBlank(5);
+        Groupbox:Resize();
+
+        return Editor;
     end;
 
     function Funcs:AddToggle(Idx, Info)
@@ -3607,6 +3697,21 @@ function Library:CreateWindow(...)
                 return SubTab:AddGroupbox(3, BoxName);
             end;
 
+            function SubTab:AddFullGroupbox(BoxName)
+                LeftSide.Visible = false;
+                MiddleSide.Visible = false;
+                RightSide.Visible = false;
+
+                local FullSide = Library:Create('Frame', {
+                    BackgroundTransparency = 1;
+                    Size = UDim2.new(1, 0, 1, 0);
+                    ZIndex = 2;
+                    Parent = SubTabFrame;
+                });
+
+                return CreateGroupbox(FullSide, 0, BoxName);
+            end;
+
             SubTabButton.InputBegan:Connect(function(Input)
                 if Input.UserInputType == Enum.UserInputType.MouseButton1 then
                     SubTab:Show();
@@ -3750,6 +3855,273 @@ function Library:CreateWindow(...)
     Library.Watermark.Position = UDim2.new(0, 12, 0, 12);
 
     return Window;
+end;
+
+function Library:EnsureLuaFolder()
+    if typeof(makefolder) ~= 'function' then
+        return;
+    end;
+
+    if typeof(isfolder) == 'function' and not isfolder(Library.LuaFolder) then
+        makefolder(Library.LuaFolder);
+    end;
+end;
+
+function Library:SanitizeScriptName(Name)
+    Name = tostring(Name or ''):gsub('[^%w%-_ ]', ''):gsub('^%s+', ''):gsub('%s+$', '');
+
+    if Name == '' then
+        Name = 'script';
+    end;
+
+    return Name;
+end;
+
+function Library:ListLuaScripts()
+    Library:EnsureLuaFolder();
+
+    if typeof(listfiles) ~= 'function' then
+        return {};
+    end;
+
+    local Scripts = {};
+
+    for _, Path in next, listfiles(Library.LuaFolder) do
+        if Path:sub(-4) == '.lua' then
+            local Name = Path:match('([^/\\]+)%.lua$');
+
+            if Name then
+                table.insert(Scripts, Name);
+            end;
+        end;
+    end;
+
+    table.sort(Scripts);
+
+    return Scripts;
+end;
+
+function Library:SaveLuaScript(Name, Source)
+    if typeof(writefile) ~= 'function' then
+        Library:Notify('writefile is unavailable in this executor', 3);
+        return false;
+    end;
+
+    Name = Library:SanitizeScriptName(Name);
+    Library:EnsureLuaFolder();
+    writefile(Library.LuaFolder .. '/' .. Name .. '.lua', Source);
+    return true;
+end;
+
+function Library:LoadLuaScript(Name)
+    if typeof(readfile) ~= 'function' or typeof(isfile) ~= 'function' then
+        return nil;
+    end;
+
+    local Path = Library.LuaFolder .. '/' .. Name .. '.lua';
+
+    if not isfile(Path) then
+        return nil;
+    end;
+
+    return readfile(Path);
+end;
+
+function Library:DeleteLuaScript(Name)
+    if typeof(delfile) ~= 'function' or typeof(isfile) ~= 'function' then
+        return false;
+    end;
+
+    local Path = Library.LuaFolder .. '/' .. Name .. '.lua';
+
+    if isfile(Path) then
+        delfile(Path);
+        return true;
+    end;
+
+    return false;
+end;
+
+function Library:RefreshLuaScriptList()
+    if not Options.LuaScriptList then
+        return;
+    end;
+
+    local Scripts = Library:ListLuaScripts();
+    Options.LuaScriptList:SetValues(Scripts);
+
+    if Scripts[1] then
+        Options.LuaScriptList:SetValue(Scripts[1]);
+    else
+        Options.LuaScriptList:SetValue(nil);
+    end;
+end;
+
+function Library:ExecuteLua(Source, ScriptName)
+    ScriptName = ScriptName or '@ChadvisionLua';
+
+    if type(Source) ~= 'string' or Source:gsub('%s', '') == '' then
+        Library:Notify('No Lua source to execute', 3);
+        return false, 'empty source';
+    end;
+
+    local WrappedSource = [[
+local __CV_OLD_PRINT = print
+print = function(...)
+    local Count = select('#', ...)
+    local Parts = {}
+    for Index = 1, Count do
+        Parts[Index] = tostring(select(Index, ...))
+    end
+    local Message = table.concat(Parts, '\t')
+    if getgenv().Library and getgenv().Library.Notify then
+        getgenv().Library:Notify(Message, 3)
+    end
+    return __CV_OLD_PRINT(...)
+end
+]] .. Source;
+
+    local Function, CompileError = loadstring(WrappedSource, ScriptName);
+
+    if not Function then
+        Library:Notify('Compile error: ' .. tostring(CompileError), 4);
+        return false, CompileError;
+    end;
+
+    local Success, RuntimeError = pcall(Function);
+
+    if not Success then
+        Library:Notify('Runtime error: ' .. tostring(RuntimeError), 4);
+        return false, RuntimeError;
+    end;
+
+    Library:Notify('Script executed successfully', 2);
+    return true;
+end;
+
+function Library:CreateLuaTab(Tab)
+    local EditorSubTab = Tab:AddSubTab('Editor');
+    local EditorGroup = EditorSubTab:AddFullGroupbox('Lua Environment');
+
+    EditorGroup:AddInput('LuaScriptName', {
+        Text = 'Script name';
+        Default = 'MyScript';
+        Finished = true;
+    });
+
+    local CodeEditor = EditorGroup:AddCodeEditor({
+        Text = 'Lua source';
+        Default = 'print("hello world")';
+        Placeholder = 'print("hello world")';
+        Height = 300;
+    });
+
+    Library.LuaCodeEditor = CodeEditor;
+    Library.LuaEditorSubTab = EditorSubTab;
+
+    EditorGroup:AddButton('Execute Lua', function()
+        Library:ExecuteLua(CodeEditor:GetValue(), Options.LuaScriptName.Value);
+    end):AddButton('Save Lua', function()
+        if Library:SaveLuaScript(Options.LuaScriptName.Value, CodeEditor:GetValue()) then
+            Library:Notify('Saved script: ' .. Options.LuaScriptName.Value, 2);
+            Library:RefreshLuaScriptList();
+        end;
+    end);
+
+    EditorGroup:AddButton('Clear Editor', function()
+        CodeEditor:SetValue('');
+    end);
+
+    local ScriptsSubTab = Tab:AddSubTab('Scripts');
+    local ScriptsGroup = ScriptsSubTab:AddLeftGroupbox('Saved Scripts');
+    local InitialScripts = Library:ListLuaScripts();
+
+    ScriptsGroup:AddDropdown('LuaScriptList', {
+        Text = 'Saved scripts';
+        Values = InitialScripts;
+        AllowNull = true;
+        Default = InitialScripts[1];
+    });
+
+    ScriptsGroup:AddButton('Refresh List', function()
+        Library:RefreshLuaScriptList();
+    end);
+
+    ScriptsGroup:AddButton('Load Script', function()
+        local Name = Options.LuaScriptList.Value;
+
+        if not Name or Name == '' then
+            Library:Notify('Select a saved script first', 3);
+            return;
+        end;
+
+        local Source = Library:LoadLuaScript(Name);
+
+        if not Source then
+            Library:Notify('Could not load script: ' .. tostring(Name), 3);
+            return;
+        end;
+
+        CodeEditor:SetValue(Source);
+        Options.LuaScriptName:SetValue(Name);
+        EditorSubTab:Show();
+        Library:Notify('Loaded ' .. Name .. ' into editor', 2);
+    end):AddButton('Execute Script', function()
+        local Name = Options.LuaScriptList.Value;
+
+        if not Name or Name == '' then
+            Library:Notify('Select a saved script first', 3);
+            return;
+        end;
+
+        local Source = Library:LoadLuaScript(Name);
+
+        if not Source then
+            Library:Notify('Could not load script: ' .. tostring(Name), 3);
+            return;
+        end;
+
+        Library:ExecuteLua(Source, Name);
+    end);
+
+    ScriptsGroup:AddButton('Delete Script', function()
+        local Name = Options.LuaScriptList.Value;
+
+        if not Name or Name == '' then
+            Library:Notify('Select a saved script first', 3);
+            return;
+        end;
+
+        if Library:DeleteLuaScript(Name) then
+            Library:Notify('Deleted script: ' .. Name, 2);
+            Library:RefreshLuaScriptList();
+        else
+            Library:Notify('Could not delete script: ' .. Name, 3);
+        end;
+    end);
+
+    local PreviewGroup = ScriptsSubTab:AddMiddleGroupbox('Preview');
+    local PreviewEditor = PreviewGroup:AddCodeEditor({
+        Text = 'Selected script';
+        Default = '';
+        Placeholder = 'Load a script to preview it here';
+        Height = 300;
+    });
+
+    PreviewEditor.Box.TextEditable = false;
+
+    Options.LuaScriptList:OnChanged(function()
+        local Name = Options.LuaScriptList.Value;
+        local Source = Name and Library:LoadLuaScript(Name) or '';
+        PreviewEditor:SetValue(Source or '');
+    end);
+
+    return {
+        Editor = CodeEditor;
+        EditorSubTab = EditorSubTab;
+        ScriptsSubTab = ScriptsSubTab;
+        Preview = PreviewEditor;
+    };
 end;
 
 getgenv().Library = Library;
