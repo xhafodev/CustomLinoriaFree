@@ -1134,7 +1134,6 @@ do
         });
 
         if Unsafe then
-            Library:MarkUnsafeText(TextLabel);
         end;
 
         if DoesWrap then
@@ -1298,42 +1297,6 @@ do
     end;
 
     function Funcs:AddDivider()
-        local Groupbox = self;
-        local Container = self.Container
-
-        local Divider = {
-            Type = 'Divider',
-        }
-
-        Groupbox:AddBlank(2);
-        local DividerOuter = Library:Create('Frame', {
-            BorderColor3 = Color3.new(0, 0, 0);
-            Size = UDim2.new(1, -4, 0, 5);
-            ZIndex = 5;
-            Parent = Container;
-        });
-
-
-        local DividerInner = Library:Create('Frame', {
-            BackgroundColor3 = Library.MainColor;
-            BorderColor3 = Library.OutlineColor;
-            BorderMode = Enum.BorderMode.Inset;
-            Size = UDim2.new(1, 0, 1, 0);
-            ZIndex = 6;
-            Parent = DividerOuter;
-        });
-
-        Library:AddToRegistry(DividerOuter, {
-            BorderColor3 = 'Black';
-        });
-
-        Library:AddToRegistry(DividerInner, {
-            BackgroundColor3 = 'MainColor';
-            BorderColor3 = 'OutlineColor';
-        });
-
-        Groupbox:AddBlank(9);
-        Groupbox:Resize();
     end
 
     function Funcs:AddInput(Idx, Info)
@@ -1564,10 +1527,6 @@ do
             Parent = ToggleInner;
         });
 
-        if Info.Unsafe then
-            Library:MarkUnsafeText(ToggleLabel);
-        end;
-
         Library:Create('UIListLayout', {
             Padding = UDim.new(0, 4);
             FillDirection = Enum.FillDirection.Horizontal;
@@ -1683,10 +1642,6 @@ do
             Parent = SliderRow;
         });
 
-        if Info.Unsafe then
-            Library:MarkUnsafeText(NameLabel);
-        end;
-
         local ValueLabel = Library:CreateLabel({
             Position = UDim2.new(0, NameWidth, 0, 0);
             Size = UDim2.new(0, ValueWidth, 1, 0);
@@ -1709,6 +1664,17 @@ do
             ZIndex = 5;
             Parent = SliderRow;
         });
+
+        local function UpdateSliderRowLayout()
+            local RowWidth = math.max(SliderRow.AbsoluteSize.X, 80);
+            local Prefix = math.min(PrefixWidth, math.floor(RowWidth * 0.5));
+
+            SliderOuter.Position = UDim2.new(0, Prefix, 0, 2);
+            SliderOuter.Size = UDim2.new(1, -Prefix, 0, 13);
+        end;
+
+        UpdateSliderRowLayout();
+        SliderRow:GetPropertyChangedSignal('AbsoluteSize'):Connect(UpdateSliderRowLayout);
 
         Library:AddToRegistry(SliderOuter, {
             BorderColor3 = 'Black';
@@ -1914,7 +1880,6 @@ do
             });
 
             if Info.Unsafe then
-                Library:MarkUnsafeText(DropdownLabel);
             end;
 
             Groupbox:AddBlank(3);
@@ -3028,7 +2993,7 @@ function Library:CreateWindow(...)
     if type(Config.Title) ~= 'string' then Config.Title = 'No title' end
     
     if typeof(Config.Position) ~= 'UDim2' then Config.Position = UDim2.fromOffset(175, 50) end
-    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(780, 540) end
+    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(900, 650) end
 
     if Config.Center then
         Config.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -3043,6 +3008,7 @@ function Library:CreateWindow(...)
         AnchorPoint = Config.AnchorPoint,
         BackgroundColor3 = Color3.new(0, 0, 0);
         BorderSizePixel = 0;
+        ClipsDescendants = true;
         Position = Config.Position,
         Size = Config.Size,
         Visible = false;
@@ -3056,6 +3022,7 @@ function Library:CreateWindow(...)
         BackgroundColor3 = Library.MainColor;
         BorderColor3 = Library.AccentColor;
         BorderMode = Enum.BorderMode.Inset;
+        ClipsDescendants = true;
         Position = UDim2.new(0, 1, 0, 1);
         Size = UDim2.new(1, -2, 1, -2);
         ZIndex = 1;
@@ -3069,8 +3036,8 @@ function Library:CreateWindow(...)
 
     local BrandRow = Library:Create('Frame', {
         BackgroundTransparency = 1;
-        Position = UDim2.new(0, 10, 0, 8);
-        Size = UDim2.new(1, -20, 0, 20);
+        Position = UDim2.new(0, 10, 0, 4);
+        Size = UDim2.new(1, -20, 0, 18);
         Active = true;
         ZIndex = 2;
         Parent = Inner;
@@ -3090,7 +3057,8 @@ function Library:CreateWindow(...)
 
     local MainTabArea = Library:Create('Frame', {
         BackgroundTransparency = 1;
-        Position = UDim2.new(0, 10, 0, 30);
+        ClipsDescendants = true;
+        Position = UDim2.new(0, 10, 0, 24);
         Size = UDim2.new(1, -20, 0, 26);
         ZIndex = 2;
         Parent = Inner;
@@ -3142,7 +3110,7 @@ function Library:CreateWindow(...)
     local ScrollGradientBar = Library:Create('Frame', {
         BackgroundColor3 = Color3.new(1, 1, 1);
         BorderSizePixel = 0;
-        Position = UDim2.new(0, 10, 0, 58);
+        Position = UDim2.new(0, 10, 0, 52);
         Size = UDim2.new(1, -20, 0, 2);
         ClipsDescendants = true;
         ZIndex = 3;
@@ -3172,8 +3140,9 @@ function Library:CreateWindow(...)
     local TabContainer = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
         BorderColor3 = Library.OutlineColor;
-        Position = UDim2.new(0, 10, 0, 64);
-        Size = UDim2.new(1, -20, 1, -74);
+        ClipsDescendants = true;
+        Position = UDim2.new(0, 10, 0, 58);
+        Size = UDim2.new(1, -20, 1, -68);
         ZIndex = 2;
         Parent = Inner;
     });
@@ -3193,7 +3162,8 @@ function Library:CreateWindow(...)
         local BoxOuter = Library:Create('Frame', {
             BackgroundColor3 = Library.BackgroundColor;
             BorderColor3 = Library.OutlineColor;
-            Size = UDim2.new(1, 0, 0, 507);
+            ClipsDescendants = true;
+            Size = UDim2.new(1, 0, 1, 0);
             ZIndex = 2;
             Parent = ParentFrame;
         });
@@ -3207,6 +3177,7 @@ function Library:CreateWindow(...)
             BackgroundColor3 = Library.BackgroundColor;
             BorderColor3 = Color3.new(0, 0, 0);
             BorderMode = Enum.BorderMode.Inset;
+            ClipsDescendants = true;
             Size = UDim2.new(1, 0, 1, 0);
             ZIndex = 4;
             Parent = BoxOuter;
@@ -3238,12 +3209,28 @@ function Library:CreateWindow(...)
             Parent = BoxInner;
         });
 
-        local Container = Library:Create('Frame', {
+        local Scroll = Library:Create('ScrollingFrame', {
             BackgroundTransparency = 1;
+            BorderSizePixel = 0;
             Position = UDim2.new(0, 4, 0, 20);
             Size = UDim2.new(1, -4, 1, -20);
+            ScrollBarThickness = 3;
+            ScrollBarImageColor3 = Library.AccentColor;
+            CanvasSize = UDim2.new();
+            ClipsDescendants = true;
             ZIndex = 1;
             Parent = BoxInner;
+        });
+
+        Library:AddToRegistry(Scroll, {
+            ScrollBarImageColor3 = 'AccentColor';
+        });
+
+        local Container = Library:Create('Frame', {
+            BackgroundTransparency = 1;
+            Size = UDim2.new(1, 0, 0, 0);
+            ZIndex = 1;
+            Parent = Scroll;
         });
 
         Library:Create('UIListLayout', {
@@ -3261,10 +3248,12 @@ function Library:CreateWindow(...)
                 end;
             end;
 
-            BoxOuter.Size = UDim2.new(1, 0, 0, 20 + Size + 2);
+            Container.Size = UDim2.new(1, 0, 0, Size + 2);
+            Scroll.CanvasSize = UDim2.new(0, 0, 0, Size + 2);
         end;
 
         Groupbox.Container = Container;
+        Groupbox.Scroll = Scroll;
         Groupbox.Side = Side;
         setmetatable(Groupbox, BaseGroupbox);
         Groupbox:AddBlank(3);
@@ -3320,6 +3309,7 @@ function Library:CreateWindow(...)
         local TabFrame = Library:Create('Frame', {
             Name = 'TabFrame';
             BackgroundTransparency = 1;
+            ClipsDescendants = true;
             Position = UDim2.new(0, 0, 0, 0);
             Size = UDim2.new(1, 0, 1, 0);
             Visible = false;
@@ -3351,6 +3341,7 @@ function Library:CreateWindow(...)
 
         local SubTabHolder = Library:Create('Frame', {
             BackgroundTransparency = 1;
+            ClipsDescendants = true;
             Position = UDim2.new(0, 8, 0, 30);
             Size = UDim2.new(1, -16, 1, -38);
             ZIndex = 2;
@@ -3436,6 +3427,7 @@ function Library:CreateWindow(...)
             local SubTabFrame = Library:Create('Frame', {
                 Name = 'SubTabFrame';
                 BackgroundTransparency = 1;
+                ClipsDescendants = true;
                 Size = UDim2.new(1, 0, 1, 0);
                 Visible = false;
                 ZIndex = 2;
@@ -3444,6 +3436,7 @@ function Library:CreateWindow(...)
 
             local LeftSide = Library:Create('Frame', {
                 BackgroundTransparency = 1;
+                ClipsDescendants = true;
                 Position = UDim2.new(0, 0, 0, 0);
                 Size = UDim2.new(0.333, -6, 1, 0);
                 ZIndex = 2;
@@ -3452,6 +3445,7 @@ function Library:CreateWindow(...)
 
             local MiddleSide = Library:Create('Frame', {
                 BackgroundTransparency = 1;
+                ClipsDescendants = true;
                 Position = UDim2.new(0.333, 2, 0, 0);
                 Size = UDim2.new(0.333, -6, 1, 0);
                 ZIndex = 2;
@@ -3460,6 +3454,7 @@ function Library:CreateWindow(...)
 
             local RightSide = Library:Create('Frame', {
                 BackgroundTransparency = 1;
+                ClipsDescendants = true;
                 Position = UDim2.new(0.666, 4, 0, 0);
                 Size = UDim2.new(0.333, -6, 1, 0);
                 ZIndex = 2;
