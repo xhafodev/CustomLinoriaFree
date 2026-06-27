@@ -1,6 +1,6 @@
 local httpService = game:GetService('HttpService')
 local ThemeManager = {} do
-	ThemeManager.Folder = 'LinoriaLibSettings'
+	ThemeManager.Folder = 'Downloads/chadvision'
 	-- if not isfolder(ThemeManager.Folder) then makefolder(ThemeManager.Folder) end
 
 	ThemeManager.Library = nil
@@ -118,7 +118,7 @@ local ThemeManager = {} do
 		groupbox:AddDropdown('UIFont', {
 			Text = 'UI font',
 			Values = self.Library.FontNames or { 'Default', 'Montserrat', 'Smallest Pixel' },
-			Default = self.Library.FontName or 'Montserrat',
+			Default = self.Library.FontName or 'Default',
 		})
 
 		Options.UIFont:OnChanged(function()
@@ -250,11 +250,17 @@ local ThemeManager = {} do
 
 		table.insert(paths, self.Folder .. '/themes')
 		table.insert(paths, self.Folder .. '/settings')
+		table.insert(paths, self.Folder .. '/scripts')
 
 		for i = 1, #paths do
-			local str = paths[i]
-			if not isfolder(str) then
-				makefolder(str)
+			local built = ''
+
+			for part in string.gmatch(paths[i], '[^/\\]+') do
+				built = built == '' and part or (built .. '/' .. part)
+
+				if typeof(isfolder) == 'function' and not isfolder(built) and typeof(makefolder) == 'function' then
+					makefolder(built)
+				end
 			end
 		end
 	end
