@@ -3436,4 +3436,6 @@ function Library:CreateWindow(...)
     return Window;
 end;
 
-return Library
+getgenv().Library = Library;
+
+return Library;
