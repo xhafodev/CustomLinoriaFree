@@ -1483,6 +1483,12 @@ do
         });
 
         Library:RegisterFontObject(Box);
+
+        Textbox.Box = Box;
+
+        function Textbox:GetValue()
+            return Box.Text;
+        end;
         
         function Textbox:SetValue(Text)
             if Info.MaxLength and #Text > Info.MaxLength then
@@ -1505,11 +1511,12 @@ do
 
         if Textbox.Finished then
             Box.FocusLost:Connect(function(enter)
-                if not enter then return end
-                
                 Textbox:SetValue(Box.Text);
-                Library:AttemptSave();
-            end)
+
+                if enter then
+                    Library:AttemptSave();
+                end;
+            end);
         else 
             Box:GetPropertyChangedSignal('Text'):Connect(function()
                 Textbox:SetValue(Box.Text);
@@ -3272,6 +3279,7 @@ function Library:CreateWindow(...)
         BorderMode = Enum.BorderMode.Inset;
         Position = UDim2.new(0, 1, 0, 1);
         Size = UDim2.new(1, -2, 1, -2);
+        ClipsDescendants = true;
         ZIndex = 1;
         Parent = Outer;
     });
@@ -3388,6 +3396,7 @@ function Library:CreateWindow(...)
         BorderColor3 = Library.OutlineColor;
         Position = UDim2.new(0, 10, 0, 60);
         Size = UDim2.new(1, -20, 1, -70);
+        ClipsDescendants = true;
         ZIndex = 2;
         Parent = Inner;
     });
@@ -3537,6 +3546,7 @@ function Library:CreateWindow(...)
             Position = UDim2.new(0, 0, 0, 0);
             Size = UDim2.new(1, 0, 1, 0);
             Visible = false;
+            ClipsDescendants = true;
             ZIndex = 2;
             Parent = TabContainer;
         });
@@ -3567,9 +3577,36 @@ function Library:CreateWindow(...)
             BackgroundTransparency = 1;
             Position = UDim2.new(0, 8, 0, 30);
             Size = UDim2.new(1, -16, 1, -38);
+            ClipsDescendants = true;
             ZIndex = 2;
             Parent = TabFrame;
         });
+
+        local function CreateSideScroll(Parent)
+            local Scroll = Library:Create('ScrollingFrame', {
+                BackgroundTransparency = 1;
+                BorderSizePixel = 0;
+                Size = UDim2.new(1, 0, 1, 0);
+                CanvasSize = UDim2.fromOffset(0, 0);
+                ScrollBarThickness = 4;
+                ClipsDescendants = true;
+                ZIndex = 2;
+                Parent = Parent;
+            });
+
+            local Layout = Library:Create('UIListLayout', {
+                Padding = UDim.new(0, 8);
+                FillDirection = Enum.FillDirection.Vertical;
+                SortOrder = Enum.SortOrder.LayoutOrder;
+                Parent = Scroll;
+            });
+
+            Layout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+                Scroll.CanvasSize = UDim2.fromOffset(0, Layout.AbsoluteContentSize.Y + 8);
+            end);
+
+            return Scroll;
+        end;
 
         function Tab:ShowTab()
             for _, OtherTab in next, Window.Tabs do
@@ -3652,6 +3689,7 @@ function Library:CreateWindow(...)
                 BackgroundTransparency = 1;
                 Size = UDim2.new(1, 0, 1, 0);
                 Visible = false;
+                ClipsDescendants = true;
                 ZIndex = 2;
                 Parent = SubTabHolder;
             });
@@ -3660,6 +3698,7 @@ function Library:CreateWindow(...)
                 BackgroundTransparency = 1;
                 Position = UDim2.new(0, 0, 0, 0);
                 Size = UDim2.new(0.333, -6, 1, 0);
+                ClipsDescendants = true;
                 ZIndex = 2;
                 Parent = SubTabFrame;
             });
@@ -3668,6 +3707,7 @@ function Library:CreateWindow(...)
                 BackgroundTransparency = 1;
                 Position = UDim2.new(0.333, 2, 0, 0);
                 Size = UDim2.new(0.333, -6, 1, 0);
+                ClipsDescendants = true;
                 ZIndex = 2;
                 Parent = SubTabFrame;
             });
@@ -3676,18 +3716,14 @@ function Library:CreateWindow(...)
                 BackgroundTransparency = 1;
                 Position = UDim2.new(0.666, 4, 0, 0);
                 Size = UDim2.new(0.333, -6, 1, 0);
+                ClipsDescendants = true;
                 ZIndex = 2;
                 Parent = SubTabFrame;
             });
 
-            for _, SideFrame in next, { LeftSide, MiddleSide, RightSide } do
-                Library:Create('UIListLayout', {
-                    Padding = UDim.new(0, 8);
-                    FillDirection = Enum.FillDirection.Vertical;
-                    SortOrder = Enum.SortOrder.LayoutOrder;
-                    Parent = SideFrame;
-                });
-            end;
+            local LeftScroll = CreateSideScroll(LeftSide);
+            local MiddleScroll = CreateSideScroll(MiddleSide);
+            local RightScroll = CreateSideScroll(RightSide);
 
             function SubTab:Show()
                 for _, Other in next, Tab.SubTabs do
@@ -3707,7 +3743,7 @@ function Library:CreateWindow(...)
             end;
 
             function SubTab:AddGroupbox(Side, BoxName)
-                local ParentFrame = Side == 1 and LeftSide or Side == 2 and MiddleSide or RightSide;
+                local ParentFrame = Side == 1 and LeftScroll or Side == 2 and MiddleScroll or RightScroll;
                 local Groupbox = CreateGroupbox(ParentFrame, Side, BoxName);
                 SubTab.Groupboxes[BoxName] = Groupbox;
                 return Groupbox;
@@ -3733,11 +3769,14 @@ function Library:CreateWindow(...)
                 local FullSide = Library:Create('Frame', {
                     BackgroundTransparency = 1;
                     Size = UDim2.new(1, 0, 1, 0);
+                    ClipsDescendants = true;
                     ZIndex = 2;
                     Parent = SubTabFrame;
                 });
 
-                return CreateGroupbox(FullSide, 0, BoxName);
+                local FullScroll = CreateSideScroll(FullSide);
+
+                return CreateGroupbox(FullScroll, 0, BoxName);
             end;
 
             SubTabButton.InputBegan:Connect(function(Input)
@@ -3978,7 +4017,19 @@ function Library:SaveLuaScript(Name, Source)
         return false;
     end;
 
-    return true;
+    return true, Name;
+end;
+
+function Library:GetLuaScriptName()
+    if Options.LuaScriptName and Options.LuaScriptName.GetValue then
+        return Library:SanitizeScriptName(Options.LuaScriptName:GetValue());
+    end;
+
+    if Options.LuaScriptName then
+        return Library:SanitizeScriptName(Options.LuaScriptName.Value);
+    end;
+
+    return 'script';
 end;
 
 function Library:LoadLuaScript(Name)
@@ -4088,11 +4139,19 @@ function Library:CreateLuaTab(Tab)
     Library.LuaEditorSubTab = EditorSubTab;
 
     EditorGroup:AddButton('Execute Lua', function()
-        Library:ExecuteLua(CodeEditor:GetValue(), Options.LuaScriptName.Value);
+        local Name = Library:GetLuaScriptName();
+        Options.LuaScriptName:SetValue(Name);
+        Library:ExecuteLua(CodeEditor:GetValue(), Name);
     end):AddButton('Save Lua', function()
-        if Library:SaveLuaScript(Options.LuaScriptName.Value, CodeEditor:GetValue()) then
-            Library:Notify('Saved script: ' .. Options.LuaScriptName.Value, 2);
+        local Name = Library:GetLuaScriptName();
+        Options.LuaScriptName:SetValue(Name);
+
+        local Saved, SavedName = Library:SaveLuaScript(Name, CodeEditor:GetValue());
+
+        if Saved then
+            Library:Notify('Saved script: ' .. SavedName, 2);
             Library:RefreshLuaScriptList();
+            Options.LuaScriptList:SetValue(SavedName);
         end;
     end);
 
