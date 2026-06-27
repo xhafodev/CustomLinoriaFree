@@ -1,21 +1,47 @@
-local InputService = game:GetService('UserInputService');
-local TextService = game:GetService('TextService');
-local TweenService = game:GetService('TweenService');
-local CoreGui = game:GetService('CoreGui');
-local RunService = game:GetService('RunService')
-local GuiService = game:GetService('GuiService')
-local RenderStepped = RunService.RenderStepped;
-local LocalPlayer = game:GetService('Players').LocalPlayer;
-local Mouse = LocalPlayer:GetMouse();
+local cloneref = cloneref or function(Object)
+    return Object;
+end;
+
+local gethui = gethui or function()
+    return cloneref(game:GetService('CoreGui'));
+end;
+
+local InputService = cloneref(game:GetService('UserInputService'));
+local TextService = cloneref(game:GetService('TextService'));
+local TweenService = cloneref(game:GetService('TweenService'));
+local RunService = cloneref(game:GetService('RunService'));
+local GuiService = cloneref(game:GetService('GuiService'));
+local Players = cloneref(game:GetService('Players'));
+local Workspace = cloneref(game:GetService('Workspace'));
+local CoreGui = gethui();
+local LocalPlayer = cloneref(Players.LocalPlayer);
+local RealMouse = cloneref(LocalPlayer:GetMouse());
+
+local Mouse = setmetatable({}, {
+    __index = function(_, Key)
+        if Key == 'X' or Key == 'Y' then
+            local Location = InputService:GetMouseLocation();
+            return Key == 'X' and Location.X or Location.Y;
+        end;
+
+        return RealMouse[Key];
+    end,
+    __newindex = function(_, Key, Value)
+        RealMouse[Key] = Value;
+    end,
+});
 
 local ProtectGui = protectgui or (syn and syn.protect_gui) or (function() end);
 
 local ScreenGui = Instance.new('ScreenGui');
 ProtectGui(ScreenGui);
+cloneref(ScreenGui);
 
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
 ScreenGui.DisplayOrder = 1000;
 ScreenGui.Parent = CoreGui;
+
+local RenderStepped = RunService.RenderStepped;
 
 local Toggles = {};
 local Options = {};
@@ -77,11 +103,12 @@ local Library = {
     BrandBodyColor = Color3.fromRGB(255, 255, 255);
     BrandRichText = '<font color="rgb(255,255,255)">chad</font><font color="rgb(255,119,68)">vision</font>';
 
-    FontName = 'Montserrat';
+    FontName = 'Default';
     FontRegistry = {};
     FontCatalog = FontCatalog;
     FontNames = FontNames;
-    LuaFolder = 'ChadvisionScripts';
+    BaseFolder = 'Downloads/chadvision';
+    LuaFolder = 'Downloads/chadvision/scripts';
 
     GradientCycle = 0;
 
@@ -143,7 +170,7 @@ function Library:Create(Class, Properties)
 end;
 
 function Library:GetFontFace()
-    local Entry = FontCatalog[Library.FontName or 'Montserrat'] or FontCatalog.Montserrat;
+    local Entry = FontCatalog[Library.FontName or 'Default'] or FontCatalog.Default;
     local Success, Face = pcall(Entry.Build);
 
     if Success and Face then
@@ -154,7 +181,7 @@ function Library:GetFontFace()
 end;
 
 function Library:GetLegacyFont()
-    local Entry = FontCatalog[Library.FontName or 'Montserrat'] or FontCatalog.Montserrat;
+    local Entry = FontCatalog[Library.FontName or 'Default'] or FontCatalog.Default;
     return Entry.Legacy or Enum.Font.Code;
 end;
 
@@ -255,6 +282,7 @@ function Library:EnsureDragLayer()
     Library.DragScreenGui.Parent = CoreGui;
 
     ProtectInstance(Library.DragScreenGui);
+    cloneref(Library.DragScreenGui);
 
     Library.DragLayer = Library:Create('Frame', {
         Name = 'DragLayer';
@@ -3857,14 +3885,35 @@ function Library:CreateWindow(...)
     return Window;
 end;
 
-function Library:EnsureLuaFolder()
+function Library:BuildStorageFolders()
     if typeof(makefolder) ~= 'function' then
-        return;
+        return false;
     end;
 
-    if typeof(isfolder) == 'function' and not isfolder(Library.LuaFolder) then
-        makefolder(Library.LuaFolder);
+    local Paths = {
+        Library.BaseFolder,
+        Library.BaseFolder .. '/settings',
+        Library.BaseFolder .. '/themes',
+        Library.LuaFolder,
+    };
+
+    for _, Path in next, Paths do
+        local Built = '';
+
+        for Part in string.gmatch(Path, '[^/\\]+') do
+            Built = Built == '' and Part or (Built .. '/' .. Part);
+
+            if typeof(isfolder) == 'function' and not isfolder(Built) then
+                makefolder(Built);
+            end;
+        end;
     end;
+
+    return true;
+end;
+
+function Library:EnsureLuaFolder()
+    return Library:BuildStorageFolders();
 end;
 
 function Library:SanitizeScriptName(Name)
@@ -3878,16 +3927,22 @@ function Library:SanitizeScriptName(Name)
 end;
 
 function Library:ListLuaScripts()
-    Library:EnsureLuaFolder();
+    Library:BuildStorageFolders();
 
     if typeof(listfiles) ~= 'function' then
         return {};
     end;
 
+    local Ok, Files = pcall(listfiles, Library.LuaFolder);
+
+    if not Ok or type(Files) ~= 'table' then
+        return {};
+    end;
+
     local Scripts = {};
 
-    for _, Path in next, listfiles(Library.LuaFolder) do
-        if Path:sub(-4) == '.lua' then
+    for _, Path in next, Files do
+        if type(Path) == 'string' and Path:sub(-4):lower() == '.lua' then
             local Name = Path:match('([^/\\]+)%.lua$');
 
             if Name then
@@ -3908,8 +3963,21 @@ function Library:SaveLuaScript(Name, Source)
     end;
 
     Name = Library:SanitizeScriptName(Name);
-    Library:EnsureLuaFolder();
-    writefile(Library.LuaFolder .. '/' .. Name .. '.lua', Source);
+    Library:BuildStorageFolders();
+
+    local Path = Library.LuaFolder .. '/' .. Name .. '.lua';
+    local Ok, Err = pcall(writefile, Path, Source);
+
+    if not Ok then
+        Library:Notify('Failed to save script: ' .. tostring(Err), 4);
+        return false;
+    end;
+
+    if typeof(isfile) == 'function' and not isfile(Path) then
+        Library:Notify('Script save failed: file was not created', 4);
+        return false;
+    end;
+
     return true;
 end;
 
@@ -4001,7 +4069,7 @@ end;
 
 function Library:CreateLuaTab(Tab)
     local EditorSubTab = Tab:AddSubTab('Editor');
-    local EditorGroup = EditorSubTab:AddFullGroupbox('Lua Environment');
+    local EditorGroup = EditorSubTab:AddFullGroupbox('Lua Editor');
 
     EditorGroup:AddInput('LuaScriptName', {
         Text = 'Script name';
@@ -4125,5 +4193,7 @@ function Library:CreateLuaTab(Tab)
 end;
 
 getgenv().Library = Library;
+
+Library:BuildStorageFolders();
 
 return Library;
