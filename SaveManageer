@@ -1,7 +1,7 @@
 local httpService = game:GetService('HttpService')
 
 local SaveManager = {} do
-	SaveManager.Folder = 'LinoriaLibSettings'
+	SaveManager.Folder = 'Downloads/chadvision'
 	SaveManager.Ignore = {}
 	SaveManager.Parser = {
 		Toggle = {
@@ -134,13 +134,19 @@ local SaveManager = {} do
 		local paths = {
 			self.Folder,
 			self.Folder .. '/themes',
-			self.Folder .. '/settings'
+			self.Folder .. '/settings',
+			self.Folder .. '/scripts',
 		}
 
 		for i = 1, #paths do
-			local str = paths[i]
-			if not isfolder(str) then
-				makefolder(str)
+			local built = ''
+
+			for part in string.gmatch(paths[i], '[^/\\]+') do
+				built = built == '' and part or (built .. '/' .. part)
+
+				if typeof(isfolder) == 'function' and not isfolder(built) and typeof(makefolder) == 'function' then
+					makefolder(built)
+				end
 			end
 		end
 	end
