@@ -29,12 +29,12 @@ local Library = {
     HudRegistry = {};
 
     FontColor = Color3.fromRGB(118, 118, 118);
-    FontColor2 = Color3.fromRGB(198, 198, 198);
-    MainColor = Color3.fromRGB(11, 11, 11);
-    SelectedTabColor = Color3.fromRGB(23, 23, 23);
-    BackgroundColor = Color3.fromRGB(15, 15, 15);
-    AccentColor = Color3.fromRGB(93, 88, 157);
-    OutlineColor = Color3.fromRGB(25, 25, 25);
+    FontColor2 = Color3.fromRGB(255, 255, 255);
+    MainColor = Color3.fromRGB(14, 14, 14);
+    SelectedTabColor = Color3.fromRGB(21, 21, 21);
+    BackgroundColor = Color3.fromRGB(21, 21, 21);
+    AccentColor = Color3.fromRGB(142, 146, 255);
+    OutlineColor = Color3.fromRGB(37, 37, 37);
 
     Black = Color3.new(0, 0, 0);
 
@@ -775,14 +775,30 @@ do
             Parent = ModeSelectInner;
         });
 
-        local ContainerLabel = Library:CreateLabel({
-            TextXAlignment = Enum.TextXAlignment.Center;
+        local ContainerRow = Library:Create('Frame', {
+            BackgroundTransparency = 1;
             Size = UDim2.new(1, 0, 0, 18);
-            TextSize = 13;
             Visible = false;
             ZIndex = 110;
             Parent = Library.KeybindContainer;
-        },  true);
+        }, true);
+
+        local ContainerLabel = Library:CreateLabel({
+            TextXAlignment = Enum.TextXAlignment.Left;
+            Size = UDim2.new(0.5, 0, 1, 0);
+            TextSize = 13;
+            ZIndex = 111;
+            Parent = ContainerRow;
+        }, true);
+
+        local ContainerKeyLabel = Library:CreateLabel({
+            TextXAlignment = Enum.TextXAlignment.Right;
+            Size = UDim2.new(0.5, 0, 1, 0);
+            Position = UDim2.new(0.5, 0, 0, 0);
+            TextSize = 13;
+            ZIndex = 111;
+            Parent = ContainerRow;
+        }, true);
 
         local Modes = Info.Modes or { 'Always', 'Toggle', 'Hold' };
         local ModeButtons = {};
@@ -839,26 +855,38 @@ do
 
             local State = KeyPicker:GetState();
 
-            ContainerLabel.Text = string.format('[%s] %s (%s)', KeyPicker.Value, Info.Text, KeyPicker.Mode);
+            ContainerLabel.Text = Info.Text;
+            ContainerKeyLabel.Text = KeyPicker.Value;
 
-            ContainerLabel.Visible = true;
-            ContainerLabel.TextColor3 = State and Library.AccentColor or Library.FontColor;
+            ContainerRow.Visible = true;
+            ContainerKeyLabel.TextColor3 = State and Library.AccentColor or Library.FontColor;
 
-            Library.RegistryMap[ContainerLabel].Properties.TextColor3 = State and 'AccentColor' or 'FontColor';
+            Library.RegistryMap[ContainerKeyLabel].Properties.TextColor3 = State and 'AccentColor' or 'FontColor';
 
             local YSize = 0
-            local XSize = 0
+            local XSize = 210
             
-            for _, Label in next, Library.KeybindContainer:GetChildren() do
-                if Label:IsA('TextLabel') and Label.Visible then
+            for _, Row in next, Library.KeybindContainer:GetChildren() do
+                if Row:IsA('Frame') and Row.Visible then
                     YSize = YSize + 18;
-                    if (Label.TextBounds.X > XSize) then
-                        XSize = Label.TextBounds.X 
-                    end 
+                    local NameWidth = 0;
+                    local KeyWidth = 0;
+
+                    for _, Child in next, Row:GetChildren() do
+                        if Child:IsA('TextLabel') then
+                            if Child.TextXAlignment == Enum.TextXAlignment.Left then
+                                NameWidth = Child.TextBounds.X;
+                            else
+                                KeyWidth = Child.TextBounds.X;
+                            end
+                        end
+                    end
+
+                    XSize = math.max(XSize, NameWidth + KeyWidth + 24);
                 end;
             end;
 
-            Library.KeybindFrame.Size = UDim2.new(0, math.max(XSize + 10, 210), 0, YSize + 23)
+            Library.KeybindFrame.Size = UDim2.new(0, XSize, 0, YSize + 23)
         end;
 
         function KeyPicker:GetState()
@@ -1563,7 +1591,7 @@ do
         local Groupbox = self;
         local Container = Groupbox.Container;
 
-        if not Info.Compact then
+        if not Info.Compact and not Info.SplitHeader then
             Library:CreateLabel({
                 Size = UDim2.new(1, 0, 0, 10);
                 TextSize = 14;
@@ -1572,6 +1600,38 @@ do
                 TextYAlignment = Enum.TextYAlignment.Bottom;
                 ZIndex = 5;
                 Parent = Container;
+            });
+
+            Groupbox:AddBlank(3);
+        end
+
+        local SplitValueLabel;
+
+        if Info.SplitHeader then
+            local Header = Library:Create('Frame', {
+                BackgroundTransparency = 1;
+                Size = UDim2.new(1, -4, 0, 15);
+                ZIndex = 5;
+                Parent = Container;
+            });
+
+            Library:CreateLabel({
+                Size = UDim2.new(0.5, 0, 1, 0);
+                TextSize = 14;
+                Text = Info.Text;
+                TextXAlignment = Enum.TextXAlignment.Left;
+                ZIndex = 5;
+                Parent = Header;
+            });
+
+            SplitValueLabel = Library:CreateLabel({
+                Size = UDim2.new(0.5, 0, 1, 0);
+                Position = UDim2.new(0.5, 0, 0, 0);
+                TextSize = 14;
+                Text = tostring(Info.Default);
+                TextXAlignment = Enum.TextXAlignment.Right;
+                ZIndex = 5;
+                Parent = Header;
             });
 
             Groupbox:AddBlank(3);
@@ -1653,8 +1713,14 @@ do
         function Slider:Display()
             local Suffix = Info.Suffix or '';
 
+            if SplitValueLabel then
+                SplitValueLabel.Text = tostring(Slider.Value) .. Suffix;
+            end
+
             if Info.Compact then
                 DisplayLabel.Text = Info.Text .. ': ' .. Slider.Value .. Suffix
+            elseif Info.SplitHeader then
+                DisplayLabel.Text = ''
             elseif Info.HideMax then
                 DisplayLabel.Text = string.format('%s', Slider.Value .. Suffix)
             else
@@ -2308,6 +2374,10 @@ do
     Library:MakeDraggable(KeybindOuter);
 end;
 
+function Library:SetKeybindListVisibility(Bool)
+    Library.KeybindFrame.Visible = Bool;
+end;
+
 function Library:SetWatermarkVisibility(Bool)
     Library.Watermark.Visible = Bool;
 end;
@@ -2464,21 +2534,11 @@ function Library:CreateWindow(...)
         BorderColor3 = 'AccentColor';
     });
 
-    local WindowLabel = Library:CreateLabel2({
-        Position = UDim2.new(0, 7, 0, 0);
-        Size = UDim2.new(0, 0, 0, 25);
-        RichText = true;
-        Text = Config.Title or '';
-        TextXAlignment = Enum.TextXAlignment.Left;
-        ZIndex = 1;
-        Parent = Inner;
-    });
-
     local MainSectionOuter = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
         BorderColor3 = Library.OutlineColor;
-        Position = UDim2.new(0, 8, 0, 25);
-        Size = UDim2.new(1, -16, 1, -33);
+        Position = UDim2.new(0, 8, 0, 8);
+        Size = UDim2.new(1, -16, 1, -16);
         ZIndex = 1;
         Parent = Inner;
     });
@@ -2522,11 +2582,18 @@ function Library:CreateWindow(...)
         Parent = MainSectionInner;
     });
 
+    local TabButtons = Library:Create('Frame', {
+        BackgroundTransparency = 1;
+        Size = UDim2.new(1, -110, 1, 0);
+        ZIndex = 1;
+        Parent = TabArea;
+    });
+
     Library:Create('UIListLayout', {
         Padding = UDim.new(0, 0);
         FillDirection = Enum.FillDirection.Horizontal;
         SortOrder = Enum.SortOrder.LayoutOrder;
-        Parent = TabArea;
+        Parent = TabButtons;
     });
 
     local TabContainer = Library:Create('Frame', {
@@ -2543,8 +2610,25 @@ function Library:CreateWindow(...)
         BorderColor3 = 'OutlineColor';
     });
 
+    local BrandLabel = Library:CreateLabel2({
+        Position = UDim2.new(1, -4, 0, 0);
+        AnchorPoint = Vector2.new(1, 0);
+        Size = UDim2.new(0, 110, 1, 0);
+        RichText = true;
+        Text = Config.Title or '.gg/interfaces';
+        TextColor3 = Library.AccentColor;
+        TextXAlignment = Enum.TextXAlignment.Right;
+        TextSize = 14;
+        ZIndex = 2;
+        Parent = TabArea;
+    });
+
+    Library:AddToRegistry(BrandLabel, {
+        TextColor3 = 'AccentColor';
+    });
+
     function Window:SetWindowTitle(Title)
-        WindowLabel.Text = Title;
+        BrandLabel.Text = Title;
     end;
 
     function Window:AddTab(Name)
@@ -2560,7 +2644,7 @@ function Library:CreateWindow(...)
             BorderColor3 = Library.OutlineColor;
             Size = UDim2.new(0, TabButtonWidth + 8 + 8, 1, 0);
             ZIndex = 1;
-            Parent = TabArea;
+            Parent = TabButtons;
         });
 
         Library:AddToRegistry(TabButton, {
@@ -2651,7 +2735,7 @@ function Library:CreateWindow(...)
             TabFrame.Visible = true;
             Blocker.BackgroundTransparency = 0;
             TabButton.BackgroundColor3 = Library.SelectedTabColor;
-            TabButtonLabel.TextColor3 = Library.AccentColor;
+            TabButtonLabel.TextColor3 = Library.FontColor2;
             Highlight.BackgroundColor3 = Library.AccentColor;
             Highlight.ZIndex = 3;
             Highlight.Visible = true;
