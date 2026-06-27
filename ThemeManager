@@ -6,9 +6,9 @@ local ThemeManager = {} do
 	ThemeManager.Library = nil
 	ThemeManager.DefaultTheme = 'chadvision'
 	ThemeManager.BuiltInThemes = {
-		['chadvision'] 		= { 1, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1A1A1A","AccentColor":"FF7744","SelectedTabColor":"222222","BackgroundColor":"1E1E1E","OutlineColor":"303030"}') },
-		['Default'] 		= { 2, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1A1A1A","AccentColor":"FF7744","SelectedTabColor":"222222","BackgroundColor":"1E1E1E","OutlineColor":"303030"}') },
-		['bottlecap'] 		= { 3, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1A1A1A","AccentColor":"FF7744","SelectedTabColor":"222222","BackgroundColor":"1E1E1E","OutlineColor":"303030"}') },
+		['chadvision'] 		= { 1, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1A1A1A","AccentColor":"FF7744","SelectedTabColor":"222222","BackgroundColor":"1E1E1E","OutlineColor":"303030","DropdownListColor":"525252"}') },
+		['Default'] 		= { 2, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1A1A1A","AccentColor":"FF7744","SelectedTabColor":"222222","BackgroundColor":"1E1E1E","OutlineColor":"303030","DropdownListColor":"525252"}') },
+		['bottlecap'] 		= { 3, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1A1A1A","AccentColor":"FF7744","SelectedTabColor":"222222","BackgroundColor":"1E1E1E","OutlineColor":"303030","DropdownListColor":"525252"}') },
 		['GameSense'] 		= { 4, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"101010","AccentColor":"9CB819","SelectedTabColor":"101010","BackgroundColor":"111111","OutlineColor":"2D2D2D"}') },
 		['Comet.pub'] 		= { 5, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"0F0F0F","AccentColor":"5D589D","SelectedTabColor":"1a191d","BackgroundColor":"0F0F0F","OutlineColor":"191919"}') },
 		['Tokyohook.cc'] 	= { 6, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"191925","AccentColor":"6759b3","SelectedTabColor":"1a1a29","BackgroundColor":"16161f","OutlineColor":"433e58"}') },
@@ -39,7 +39,7 @@ local ThemeManager = {} do
 
 	function ThemeManager:ThemeUpdate()
 		-- This allows us to force apply themes without loading the themes tab :)
-		local options = { "FontColor", "MainColor", "AccentColor", "SelectedTabColor", "BackgroundColor", "OutlineColor" }
+		local options = { "FontColor", "MainColor", "AccentColor", "SelectedTabColor", "BackgroundColor", "OutlineColor", "DropdownListColor" }
 		for i, field in next, options do
 			if Options and Options[field] then
 				self.Library[field] = Options[field].Value
@@ -94,6 +94,7 @@ local ThemeManager = {} do
         groupbox:AddLabel('Selected tab color'):AddColorPicker('SelectedTabColor', { Default = self.Library.SelectedTabColor });
 		groupbox:AddLabel('Outline color'):AddColorPicker('OutlineColor', { Default = self.Library.OutlineColor });
 		groupbox:AddLabel('Font color')	:AddColorPicker('FontColor', { Default = self.Library.FontColor });
+		groupbox:AddLabel('Dropdown list')	:AddColorPicker('DropdownListColor', { Default = self.Library.DropdownListColor });
 
 		local ThemesArray = {}
 		for Name, Theme in next, self.BuiltInThemes do
@@ -174,6 +175,7 @@ local ThemeManager = {} do
         Options.SelectedTabColor:OnChanged(UpdateTheme)
 		Options.OutlineColor:OnChanged(UpdateTheme)
 		Options.FontColor:OnChanged(UpdateTheme)
+		Options.DropdownListColor:OnChanged(UpdateTheme)
 	end
 
 	function ThemeManager:GetCustomTheme(file)
@@ -198,7 +200,7 @@ local ThemeManager = {} do
 		end
 
 		local theme = {}
-		local fields = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor" }
+		local fields = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor", "DropdownListColor" }
 
 		for _, field in next, fields do
 			theme[field] = Options[field].Value:ToHex()
@@ -284,6 +286,11 @@ local ThemeManager = {} do
 	function ThemeManager:ApplyToGroupbox(groupbox)
 		assert(self.Library, 'Must set ThemeManager.Library first!')
 		self:CreateThemeManager(groupbox)
+	end
+
+	function ThemeManager:ApplyToTab(tab)
+		assert(self.Library, 'Must set ThemeManager.Library first!')
+		self:ApplyToGroupbox(tab:AddLeftGroupbox('Themes'))
 	end
 
 	ThemeManager:BuildFolderTree()
