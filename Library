@@ -14,6 +14,7 @@ local ScreenGui = Instance.new('ScreenGui');
 ProtectGui(ScreenGui);
 
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
+ScreenGui.DisplayOrder = 999;
 ScreenGui.Parent = CoreGui;
 
 local Toggles = {};
@@ -128,39 +129,98 @@ function Library:CreateLabel2(Properties, IsHud)
     return Library:Create(_Instance, Properties);
 end;
 
-function Library:MakeGhostDraggable(Instance, DragHandle)
-    DragHandle = DragHandle or Instance;
-    DragHandle.Active = true;
+local function ProtectInstance(Object)
+    pcall(ProtectGui, Object);
+end;
+
+function Library:EnsureDragLayer()
+    if Library.DragScreenGui and Library.DragScreenGui.Parent then
+        return Library.DragLayer;
+    end;
+
+    Library.DragScreenGui = Instance.new('ScreenGui');
+    Library.DragScreenGui.Name = 'BottlecapDragPreview';
+    Library.DragScreenGui.ResetOnSpawn = false;
+    Library.DragScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
+    Library.DragScreenGui.DisplayOrder = 1000;
+    Library.DragScreenGui.Parent = CoreGui;
+
+    ProtectInstance(Library.DragScreenGui);
+
+    Library.DragLayer = Library:Create('Frame', {
+        Name = 'DragLayer';
+        BackgroundTransparency = 1;
+        Size = UDim2.fromScale(1, 1);
+        Active = false;
+        ZIndex = 1;
+        Parent = Library.DragScreenGui;
+    });
+
+    return Library.DragLayer;
+end;
+
+function Library:CreateDragGhost()
+    local Layer = Library:EnsureDragLayer();
 
     local Ghost = Library:Create('Frame', {
         Name = 'DragGhost';
         BackgroundColor3 = Library.AccentColor;
-        BackgroundTransparency = 0.88;
-        BorderSizePixel = 0;
+        BackgroundTransparency = 0.35;
+        BorderColor3 = Library.AccentColor;
+        BorderSizePixel = 2;
         Visible = false;
-        ZIndex = 10000;
-        Parent = ScreenGui;
+        ZIndex = 2;
+        Parent = Layer;
     });
 
-    local GhostStroke = Library:Create('UIStroke', {
-        Color = Library.AccentColor;
-        Thickness = 2;
-        LineJoinMode = Enum.LineJoinMode.Round;
+    Library:Create('Frame', {
+        BackgroundColor3 = Library.AccentColor;
+        BackgroundTransparency = 0.65;
+        BorderSizePixel = 0;
+        Position = UDim2.fromOffset(1, 1);
+        Size = UDim2.new(1, -2, 1, -2);
+        ZIndex = 3;
         Parent = Ghost;
     });
 
-    Library:AddToRegistry(Ghost, {
-        BackgroundColor3 = 'AccentColor';
-    });
+    ProtectInstance(Ghost);
+    ProtectInstance(Library.DragScreenGui);
 
-    Library:AddToRegistry(GhostStroke, {
-        Color = 'AccentColor';
-    });
+    return Ghost;
+end;
 
-    local function SyncGhost()
-        Ghost.AnchorPoint = Vector2.new(0, 0);
-        Ghost.Size = UDim2.fromOffset(Instance.AbsoluteSize.X, Instance.AbsoluteSize.Y);
+function Library:GetDragTargetSize(Instance)
+    local Abs = Instance.AbsoluteSize;
+    local Width = Abs.X;
+    local Height = Abs.Y;
+
+    if Width < 2 then
+        Width = Instance.Size.X.Offset;
+
+        if Instance.Size.X.Scale > 0 then
+            Width = (ScreenGui.AbsoluteSize.X * Instance.Size.X.Scale) + Instance.Size.X.Offset;
+        end;
     end;
+
+    if Height < 2 then
+        Height = Instance.Size.Y.Offset;
+
+        if Instance.Size.Y.Scale > 0 then
+            Height = (ScreenGui.AbsoluteSize.Y * Instance.Size.Y.Scale) + Instance.Size.Y.Offset;
+        end;
+    end;
+
+    return math.max(Width, 2), math.max(Height, 2);
+end;
+
+function Library:GetMousePosition()
+    local Location = InputService:GetMouseLocation();
+    return Location.X, Location.Y;
+end;
+
+function Library:MakeGhostDraggable(Instance, DragHandle)
+    DragHandle = DragHandle or Instance;
+    DragHandle.Active = true;
 
     DragHandle.InputBegan:Connect(function(Input)
         if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
@@ -171,31 +231,44 @@ function Library:MakeGhostDraggable(Instance, DragHandle)
             return;
         end;
 
+        local Ghost = Library:CreateDragGhost();
+        local MouseX, MouseY = Library:GetMousePosition();
+        local StartTopLeft = Instance.AbsolutePosition;
         local ObjPos = Vector2.new(
-            Mouse.X - Instance.AbsolutePosition.X,
-            Mouse.Y - Instance.AbsolutePosition.Y
+            MouseX - StartTopLeft.X,
+            MouseY - StartTopLeft.Y
         );
 
-        SyncGhost();
-        Ghost.Position = UDim2.fromOffset(Instance.AbsolutePosition.X, Instance.AbsolutePosition.Y);
+        local function UpdateGhost()
+            local Width, Height = Library:GetDragTargetSize(Instance);
+            MouseX, MouseY = Library:GetMousePosition();
+
+            Ghost.AnchorPoint = Vector2.new(0, 0);
+            Ghost.Size = UDim2.fromOffset(Width, Height);
+            Ghost.Position = UDim2.fromOffset(
+                MouseX - ObjPos.X,
+                MouseY - ObjPos.Y
+            );
+        end;
+
+        UpdateGhost();
         Ghost.Visible = true;
+        task.defer(UpdateGhost);
 
         while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-            SyncGhost();
-            Ghost.Position = UDim2.fromOffset(
-                Mouse.X - ObjPos.X,
-                Mouse.Y - ObjPos.Y
-            );
+            UpdateGhost();
             RenderStepped:Wait();
         end;
 
         local NewTopLeft = Ghost.AbsolutePosition;
+        local Width, Height = Library:GetDragTargetSize(Instance);
+
         Instance.Position = UDim2.fromOffset(
-            NewTopLeft.X + Instance.AbsoluteSize.X * Instance.AnchorPoint.X,
-            NewTopLeft.Y + Instance.AbsoluteSize.Y * Instance.AnchorPoint.Y
+            NewTopLeft.X + (Width * Instance.AnchorPoint.X),
+            NewTopLeft.Y + (Height * Instance.AnchorPoint.Y)
         );
 
-        Ghost.Visible = false;
+        Ghost:Destroy();
 
         if Library.WindowHolder == Instance then
             Library:PositionColorPicker();
