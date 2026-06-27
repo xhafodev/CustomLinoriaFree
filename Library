@@ -6,6 +6,7 @@ local gethui = gethui or function()
     return cloneref(game:GetService('CoreGui'));
 end;
 
+local HttpService = cloneref(game:GetService('HttpService'));
 local InputService = cloneref(game:GetService('UserInputService'));
 local TextService = cloneref(game:GetService('TextService'));
 local TweenService = cloneref(game:GetService('TweenService'));
@@ -1297,17 +1298,39 @@ do
         function Button:AddButton(Text, Func)
             local SubButton = {}
 
-            ButtonOuter.Size = UDim2.new(0.5, -3, 0, 20)
-            
-            local Outer = ButtonOuter:Clone()
-            local Inner = Outer.Frame;
-            local Label = Inner:FindFirstChildWhichIsA('TextLabel')
+            ButtonOuter.Size = UDim2.new(1, -4, 0, 20)
+            ButtonInner.Size = UDim2.new(0.5, -1, 1, 0)
+            ButtonInner.Position = UDim2.fromOffset(0, 0)
 
-            Outer.Position = UDim2.new(1, 2, 0, 0)
-            Outer.Size = UDim2.new(1, 0, 0, 20)
-            Outer.Parent = ButtonOuter
+            local Outer = Library:Create('Frame', {
+                BorderColor3 = Color3.new(0, 0, 0);
+                Size = UDim2.new(0.5, -1, 1, 0);
+                Position = UDim2.new(0.5, 1, 0, 0);
+                ZIndex = 5;
+                Parent = ButtonOuter;
+            });
 
-            Label.Text = Text;
+            local Inner = Library:Create('Frame', {
+                Name = 'Frame';
+                BackgroundColor3 = Library.MainColor;
+                BorderColor3 = Library.OutlineColor;
+                BorderMode = Enum.BorderMode.Inset;
+                Size = UDim2.new(1, 0, 1, 0);
+                ZIndex = 6;
+                Parent = Outer;
+            });
+
+            local Label = Library:CreateLabel({
+                Size = UDim2.new(1, 0, 1, 0);
+                TextSize = 14;
+                Text = Text;
+                ZIndex = 6;
+                Parent = Inner;
+            });
+
+            Library:AddToRegistry(Outer, {
+                BorderColor3 = 'Black';
+            });
 
             Library:AddToRegistry(Inner, {
                 BackgroundColor3 = 'MainColor';
@@ -2373,7 +2396,26 @@ do
             -- ListOuter.Size = UDim2.new(1, -8, 0, (#Values * 20) + 2);
         end;
 
+        function Dropdown:UpdateListPosition()
+            local PopupParent = Library.WindowHolder or ScreenGui;
+            local DropPos = DropdownOuter.AbsolutePosition;
+            local DropSize = DropdownOuter.AbsoluteSize;
+            local ParentPos = PopupParent.AbsolutePosition;
+
+            if ListOuter.Parent ~= PopupParent then
+                ListOuter.Parent = PopupParent;
+            end;
+
+            ListOuter.Position = UDim2.fromOffset(
+                DropPos.X - ParentPos.X,
+                DropPos.Y - ParentPos.Y + DropSize.Y + 1
+            );
+            ListOuter.Size = UDim2.fromOffset(DropSize.X, ListOuter.Size.Y.Offset);
+            ListOuter.ZIndex = 50;
+        end;
+
         function Dropdown:OpenDropdown()
+            Dropdown:UpdateListPosition();
             ListOuter.Visible = true;
             Library.OpenedFrames[ListOuter] = true;
             DropdownArrow.Rotation = 180;
@@ -2426,12 +2468,8 @@ do
         end);
 
         InputService.InputBegan:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-                local AbsPos, AbsSize = ListOuter.AbsolutePosition, ListOuter.AbsoluteSize;
-
-                if Mouse.X < AbsPos.X or Mouse.X > AbsPos.X + AbsSize.X
-                    or Mouse.Y < (AbsPos.Y - 20 - 1) or Mouse.Y > AbsPos.Y + AbsSize.Y then
-
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 and ListOuter.Visible then
+                if not Library:IsMouseOverFrame(ListOuter) and not Library:IsMouseOverFrame(DropdownOuter) then
                     Dropdown:CloseDropdown();
                 end;
             end;
@@ -3965,6 +4003,37 @@ function Library:SanitizeScriptName(Name)
     return Name;
 end;
 
+function Library:ExtractStorageFileName(Path, Extension)
+    if type(Path) ~= 'string' then
+        return nil;
+    end;
+
+    local Marker = '.' .. Extension;
+    local Pos = Path:lower():find(Marker, 1, true);
+    local Start = Pos;
+
+    if not Start then
+        return nil;
+    end;
+
+    local Char = Path:sub(Start, Start);
+
+    while Char ~= '/' and Char ~= '\\' and Char ~= '' do
+        Start = Start - 1;
+        Char = Path:sub(Start, Start);
+    end;
+
+    if Char == '/' or Char == '\\' then
+        local Name = Path:sub(Start + 1, Pos - 1);
+
+        if Name ~= '' then
+            return Name;
+        end;
+    end;
+
+    return nil;
+end;
+
 function Library:ListLuaScripts()
     Library:BuildStorageFolders();
 
@@ -3979,32 +4048,52 @@ function Library:ListLuaScripts()
     end;
 
     local Scripts = {};
+    local Seen = {};
 
     for _, Path in next, Files do
-        if type(Path) == 'string' and Path:sub(-4):lower() == '.lua' then
-            local Pos = Path:find('.lua', 1, true);
-            local Start = Pos;
+        local Name;
 
-            if Start then
-                local Char = Path:sub(Start, Start);
+        if type(Path) == 'string' then
+            Name = Library:ExtractStorageFileName(Path, 'json')
+                or Library:ExtractStorageFileName(Path, 'lua');
+        end;
 
-                while Char ~= '/' and Char ~= '\\' and Char ~= '' do
-                    Start = Start - 1;
-                    Char = Path:sub(Start, Start);
-                end;
-
-                local Name = Path:sub(Start + 1, Pos - 1);
-
-                if Name ~= '' then
-                    table.insert(Scripts, Name);
-                end;
-            end;
+        if Name and not Seen[Name] then
+            Seen[Name] = true;
+            table.insert(Scripts, Name);
         end;
     end;
 
     table.sort(Scripts);
 
     return Scripts;
+end;
+
+function Library:ReadLuaScriptFile(Name)
+    if typeof(readfile) ~= 'function' or typeof(isfile) ~= 'function' then
+        return nil;
+    end;
+
+    Name = Library:SanitizeScriptName(Name);
+    local JsonPath = Library.LuaFolder .. '/' .. Name .. '.json';
+
+    if isfile(JsonPath) then
+        local Ok, Decoded = pcall(function()
+            return HttpService:JSONDecode(readfile(JsonPath));
+        end);
+
+        if Ok and type(Decoded) == 'table' and type(Decoded.source) == 'string' then
+            return Decoded.source, Decoded.name or Name;
+        end;
+    end;
+
+    local LegacyPath = Library.LuaFolder .. '/' .. Name .. '.lua';
+
+    if isfile(LegacyPath) then
+        return readfile(LegacyPath), Name;
+    end;
+
+    return nil;
 end;
 
 function Library:SaveLuaScript(Name, Source)
@@ -4016,10 +4105,23 @@ function Library:SaveLuaScript(Name, Source)
     Name = Library:SanitizeScriptName(Name);
     Library:BuildStorageFolders();
 
-    local Path = Library.LuaFolder .. '/' .. Name .. '.lua';
-    local Ok, Err = pcall(writefile, Path, tostring(Source or ''));
+    local Payload = {
+        name = Name;
+        source = tostring(Source or '');
+        updated = os.time();
+    };
 
-    if not Ok then
+    local OkEncode, Encoded = pcall(HttpService.JSONEncode, HttpService, Payload);
+
+    if not OkEncode then
+        Library:Notify('Failed to encode script: ' .. tostring(Encoded), 4);
+        return false;
+    end;
+
+    local Path = Library.LuaFolder .. '/' .. Name .. '.json';
+    local OkWrite, Err = pcall(writefile, Path, Encoded);
+
+    if not OkWrite then
         Library:Notify('Failed to save script: ' .. tostring(Err), 4);
         return false;
     end;
@@ -4028,29 +4130,26 @@ function Library:SaveLuaScript(Name, Source)
 end;
 
 function Library:GetLuaScriptName()
-    if Options.LuaScriptName and Options.LuaScriptName.GetValue then
-        return Library:SanitizeScriptName(Options.LuaScriptName:GetValue());
+    local Input = Options.LuaScriptName;
+
+    if Input and Input.Box then
+        return Library:SanitizeScriptName(Input.Box.Text);
     end;
 
-    if Options.LuaScriptName then
-        return Library:SanitizeScriptName(Options.LuaScriptName.Value);
+    if Input and Input.GetValue then
+        return Library:SanitizeScriptName(Input.GetValue());
+    end;
+
+    if Input then
+        return Library:SanitizeScriptName(Input.Value);
     end;
 
     return 'script';
 end;
 
 function Library:LoadLuaScript(Name)
-    if typeof(readfile) ~= 'function' or typeof(isfile) ~= 'function' then
-        return nil;
-    end;
-
-    local Path = Library.LuaFolder .. '/' .. Name .. '.lua';
-
-    if not isfile(Path) then
-        return nil;
-    end;
-
-    return readfile(Path);
+    local Source = Library:ReadLuaScriptFile(Name);
+    return Source;
 end;
 
 function Library:DeleteLuaScript(Name)
@@ -4058,14 +4157,22 @@ function Library:DeleteLuaScript(Name)
         return false;
     end;
 
-    local Path = Library.LuaFolder .. '/' .. Name .. '.lua';
+    Name = Library:SanitizeScriptName(Name);
+    local Deleted = false;
+    local JsonPath = Library.LuaFolder .. '/' .. Name .. '.json';
+    local LegacyPath = Library.LuaFolder .. '/' .. Name .. '.lua';
 
-    if isfile(Path) then
-        delfile(Path);
-        return true;
+    if isfile(JsonPath) then
+        delfile(JsonPath);
+        Deleted = true;
     end;
 
-    return false;
+    if isfile(LegacyPath) then
+        delfile(LegacyPath);
+        Deleted = true;
+    end;
+
+    return Deleted;
 end;
 
 function Library:RefreshLuaScriptList(SelectName)
@@ -4156,6 +4263,16 @@ function Library:CreateLuaTab(Tab)
         Library:ExecuteLua(CodeEditor:GetValue(), Name);
     end):AddButton('Save Lua', function()
         local Name = Library:GetLuaScriptName();
+
+        if Name == 'script' and Options.LuaScriptName and Options.LuaScriptName.Box then
+            local Raw = Options.LuaScriptName.Box.Text:gsub('^%s+', ''):gsub('%s+$', '');
+
+            if Raw == '' then
+                Library:Notify('Enter a script name first', 3);
+                return;
+            end;
+        end;
+
         Options.LuaScriptName:SetValue(Name);
 
         local Saved, SavedName = Library:SaveLuaScript(Name, CodeEditor:GetValue());
@@ -4253,6 +4370,10 @@ function Library:CreateLuaTab(Tab)
         local Source = Name and Library:LoadLuaScript(Name) or '';
         PreviewEditor:SetValue(Source or '');
     end);
+
+    if InitialScripts[1] then
+        PreviewEditor:SetValue(Library:LoadLuaScript(InitialScripts[1]) or '');
+    end;
 
     return {
         Editor = CodeEditor;
