@@ -71,10 +71,10 @@ table.insert(Library.Signals, RenderStepped:Connect(function(Delta)
         Library.CurrentRainbowColor = Color3.fromHSV(Hue, 0.8, 1);
     end
 
-    Library.GradientOffset = Library.GradientOffset + Delta * 0.18;
+    Library.GradientOffset = Library.GradientOffset + Delta * 0.12;
 
     if Library.ScrollGradient then
-        Library.ScrollGradient.Offset = Vector2.new(Library.GradientOffset % 1, 0);
+        Library.ScrollGradient.Offset = Vector2.new(Library.GradientOffset, 0);
     end
 end))
 
@@ -128,48 +128,16 @@ function Library:CreateLabel2(Properties, IsHud)
     return Library:Create(_Instance, Properties);
 end;
 
-function Library:MakeDraggable(Instance, Cutoff)
-    Instance.Active = true;
-
-   Instance.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local ObjPos = Vector2.new(
-                Mouse.X - Instance.AbsolutePosition.X,
-                Mouse.Y - Instance.AbsolutePosition.Y
-            );
-
-            if ObjPos.Y > (Cutoff or 40) then
-                return;
-            end;
-
-            while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                Instance.Position = UDim2.new(
-                    0,
-                    Mouse.X - ObjPos.X + (Instance.Size.X.Offset * Instance.AnchorPoint.X),
-                    0,
-                    Mouse.Y - ObjPos.Y + (Instance.Size.Y.Offset * Instance.AnchorPoint.Y)
-                );
-
-                RenderStepped:Wait();
-            end;
-        end;
-    end)
-end;
-
-function Library:GetLighterColor(Color)
-    local H, S, V = Color3.toHSV(Color);
-    return Color3.fromHSV(H, S * 0.65, math.clamp(V * 1.18, 0, 1));
-end;
-
-function Library:MakeWindowDraggable(Outer, Cutoff)
-    Outer.Active = true;
+function Library:MakeGhostDraggable(Instance, DragHandle)
+    DragHandle = DragHandle or Instance;
+    DragHandle.Active = true;
 
     local Ghost = Library:Create('Frame', {
         BackgroundTransparency = 1;
         BorderColor3 = Library.AccentColor;
         BorderSizePixel = 1;
         Visible = false;
-        ZIndex = 0;
+        ZIndex = (Instance.ZIndex or 1) + 200;
         Parent = ScreenGui;
     });
 
@@ -177,42 +145,60 @@ function Library:MakeWindowDraggable(Outer, Cutoff)
         BorderColor3 = 'AccentColor';
     });
 
-    Outer.InputBegan:Connect(function(Input)
+    local function GetPosition(ObjPos)
+        return UDim2.new(
+            0,
+            Mouse.X - ObjPos.X + (Instance.Size.X.Offset * Instance.AnchorPoint.X),
+            0,
+            Mouse.Y - ObjPos.Y + (Instance.Size.Y.Offset * Instance.AnchorPoint.Y)
+        );
+    end;
+
+    DragHandle.InputBegan:Connect(function(Input)
         if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
             return;
         end;
 
-        local ObjPos = Vector2.new(
-            Mouse.X - Outer.AbsolutePosition.X,
-            Mouse.Y - Outer.AbsolutePosition.Y
-        );
-
-        if ObjPos.Y > (Cutoff or 58) then
+        if Library:MouseIsOverOpenedFrame() then
             return;
         end;
 
-        Ghost.Size = Outer.Size;
-        Ghost.AnchorPoint = Outer.AnchorPoint;
-        Ghost.Position = Outer.Position;
+        local ObjPos = Vector2.new(
+            Mouse.X - Instance.AbsolutePosition.X,
+            Mouse.Y - Instance.AbsolutePosition.Y
+        );
+
+        Ghost.Size = Instance.Size;
+        Ghost.AnchorPoint = Instance.AnchorPoint;
+        Ghost.Position = Instance.Position;
         Ghost.Visible = true;
 
         while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-            local NewPosition = UDim2.new(
-                0,
-                Mouse.X - ObjPos.X + (Outer.Size.X.Offset * Outer.AnchorPoint.X),
-                0,
-                Mouse.Y - ObjPos.Y + (Outer.Size.Y.Offset * Outer.AnchorPoint.Y)
-            );
-
-            Outer.Position = NewPosition;
-            Ghost.Position = NewPosition;
-            Ghost.Size = Outer.Size;
-
+            Ghost.Position = GetPosition(ObjPos);
+            Ghost.Size = Instance.Size;
             RenderStepped:Wait();
         end;
 
+        Instance.Position = Ghost.Position;
         Ghost.Visible = false;
+
+        if Library.WindowHolder == Instance then
+            Library:PositionColorPicker();
+        end;
     end);
+end;
+
+function Library:MakeDraggable(Instance, DragHandle)
+    Library:MakeGhostDraggable(Instance, DragHandle);
+end;
+
+function Library:MakeWindowDraggable(Outer, DragHandle)
+    Library:MakeGhostDraggable(Outer, DragHandle);
+end;
+
+function Library:GetLighterColor(Color)
+    local H, S, V = Color3.toHSV(Color);
+    return Color3.fromHSV(H, S * 0.65, math.clamp(V * 1.18, 0, 1));
 end;
 
 function Library:MakeResizable(Outer, MinSize)
@@ -231,7 +217,8 @@ function Library:MakeResizable(Outer, MinSize)
 
     local ResizeCircle = Library:Create('Frame', {
         BackgroundColor3 = Library.AccentColor;
-        Position = UDim2.fromOffset(-18, -18);
+        BackgroundTransparency = 0.55;
+        Position = UDim2.fromOffset(0, 0);
         Size = UDim2.fromOffset(36, 36);
         ZIndex = 51;
         Parent = ResizeHolder;
@@ -246,10 +233,15 @@ function Library:MakeResizable(Outer, MinSize)
         BackgroundColor3 = 'AccentColor';
     });
 
-    Library:OnHighlight(ResizeHolder, ResizeCircle,
-        { BackgroundColor3 = 'AccentColorLight' },
-        { BackgroundColor3 = 'AccentColor' }
-    );
+    ResizeHolder.MouseEnter:Connect(function()
+        ResizeCircle.BackgroundTransparency = 0.3;
+        ResizeCircle.BackgroundColor3 = Library.AccentColorLight;
+    end);
+
+    ResizeHolder.MouseLeave:Connect(function()
+        ResizeCircle.BackgroundTransparency = 0.55;
+        ResizeCircle.BackgroundColor3 = Library.AccentColor;
+    end);
 
     ResizeHolder.InputBegan:Connect(function(Input)
         if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
@@ -2636,8 +2628,17 @@ function Library:InitColorPickerWindow()
         end;
     end));
 
+    local ColorPickerDragBar = Library:Create('Frame', {
+        BackgroundTransparency = 1;
+        Position = UDim2.fromOffset(0, 0);
+        Size = UDim2.new(1, 0, 0, 24);
+        Active = true;
+        ZIndex = 110;
+        Parent = Inner;
+    });
+
     Library.ColorPickerOuter = Outer;
-    Library:MakeDraggable(Outer, 40);
+    Library:MakeGhostDraggable(Outer, ColorPickerDragBar);
 end;
 
 function Library:PositionColorPicker()
@@ -2842,7 +2843,6 @@ function Library:CreateWindow(...)
         Parent = ScreenGui;
     });
 
-    Library:MakeWindowDraggable(Outer, 58);
     Library:MakeResizable(Outer);
 
     local Inner = Library:Create('Frame', {
@@ -2864,9 +2864,12 @@ function Library:CreateWindow(...)
         BackgroundTransparency = 1;
         Position = UDim2.new(0, 10, 0, 8);
         Size = UDim2.new(1, -20, 0, 20);
+        Active = true;
         ZIndex = 2;
         Parent = Inner;
     });
+
+    Library:MakeWindowDraggable(Outer, BrandRow);
 
     local BrandLabel = Library:CreateLabel2({
         Size = UDim2.new(1, 0, 1, 0);
@@ -2893,13 +2896,6 @@ function Library:CreateWindow(...)
         Parent = MainTabArea;
     });
 
-    Library:Create('UIListLayout', {
-        Padding = UDim.new(0, 4);
-        FillDirection = Enum.FillDirection.Horizontal;
-        SortOrder = Enum.SortOrder.LayoutOrder;
-        Parent = TabButtons;
-    });
-
     Window.TabOrder = {};
 
     function Window:RefreshTabLayout()
@@ -2909,11 +2905,32 @@ function Library:CreateWindow(...)
         end;
 
         local Gap = 4;
-        for _, Tab in next, self.TabOrder do
-            Tab.TabButton.Size = UDim2.new(1 / Count, -(Gap * (Count - 1) / Count), 1, 0);
+        local TotalWidth = TabButtons.AbsoluteSize.X;
+        local Height = TabButtons.AbsoluteSize.Y;
+
+        if TotalWidth <= 0 then
+            task.defer(function()
+                self:RefreshTabLayout();
+            end);
+            return;
+        end;
+
+        local TabWidth = math.floor((TotalWidth - Gap * (Count - 1)) / Count);
+        local Remainder = TotalWidth - (TabWidth * Count + Gap * (Count - 1));
+
+        for Index, Tab in ipairs(self.TabOrder) do
+            local Width = TabWidth + (Index == Count and Remainder or 0);
+            local X = (Index - 1) * (TabWidth + Gap);
+
+            Tab.TabButton.Size = UDim2.fromOffset(Width, Height);
+            Tab.TabButton.Position = UDim2.fromOffset(X, 0);
             Tab.TabButtonLabel.TextXAlignment = Enum.TextXAlignment.Center;
         end;
     end;
+
+    TabButtons:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()
+        Window:RefreshTabLayout();
+    end);
 
     local ScrollGradientBar = Library:Create('Frame', {
         BackgroundColor3 = Color3.new(1, 1, 1);
@@ -2928,9 +2945,7 @@ function Library:CreateWindow(...)
     Library.ScrollGradient = Library:Create('UIGradient', {
         Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Library.AccentColor),
-            ColorSequenceKeypoint.new(0.25, Color3.new(1, 1, 1)),
-            ColorSequenceKeypoint.new(0.5, Library.AccentColor),
-            ColorSequenceKeypoint.new(0.75, Color3.new(1, 1, 1)),
+            ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
             ColorSequenceKeypoint.new(1, Library.AccentColor),
         });
         Rotation = 0;
@@ -2941,9 +2956,7 @@ function Library:CreateWindow(...)
         Color = function()
             return ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Library.AccentColor),
-                ColorSequenceKeypoint.new(0.25, Color3.new(1, 1, 1)),
-                ColorSequenceKeypoint.new(0.5, Library.AccentColor),
-                ColorSequenceKeypoint.new(0.75, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
                 ColorSequenceKeypoint.new(1, Library.AccentColor),
             });
         end
