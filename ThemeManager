@@ -114,7 +114,7 @@ local ThemeManager = {} do
 
 		groupbox:AddDropdown('UIFont', {
 			Text = 'UI font',
-			Values = { 'Default', 'Montserrat', 'Smallest Pixel' },
+			Values = self.Library.FontNames or { 'Default', 'Montserrat', 'Smallest Pixel' },
 			Default = self.Library.FontName or 'Montserrat',
 		})
 
