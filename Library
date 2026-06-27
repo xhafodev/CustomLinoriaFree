@@ -44,53 +44,20 @@ local Library = {
 
     FontName = 'Montserrat';
     FontRegistry = {};
-    FontOptions = {
-        'Default';
-        'Montserrat';
-        'Smallest Pixel';
-        'Inter';
-        'Roboto';
-        'Roboto Mono';
-        'Gotham';
-        'Ubuntu';
-        'Poppins';
-        'Open Sans';
-        'Builder Sans';
-    };
-    FontBuilders = {
-        ['Default'] = function()
-            return Font.fromEnum(Enum.Font.Code);
-        end;
-        ['Montserrat'] = function()
-            return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end;
-        ['Smallest Pixel'] = function()
-            return Font.fromEnum(Enum.Font.Arcade);
-        end;
-        ['Inter'] = function()
-            return Font.new('rbxasset://fonts/families/Inter.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end;
-        ['Roboto'] = function()
-            return Font.new('rbxasset://fonts/families/Roboto.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-        end;
-        ['Roboto Mono'] = function()
-            return Font.new('rbxasset://fonts/families/RobotoMono.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-        end;
-        ['Gotham'] = function()
-            return Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end;
-        ['Ubuntu'] = function()
-            return Font.new('rbxasset://fonts/families/Ubuntu.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end;
-        ['Poppins'] = function()
-            return Font.new('rbxasset://fonts/families/Poppins.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end;
-        ['Open Sans'] = function()
-            return Font.new('rbxasset://fonts/families/OpenSans.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
-        end;
-        ['Builder Sans'] = function()
-            return Font.new('rbxasset://fonts/families/BuilderSans.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
-        end;
+
+    FontNames = {
+        'Default',
+        'Montserrat',
+        'Roboto',
+        'Inter',
+        'Source Sans',
+        'Open Sans',
+        'Gotham',
+        'Poppins',
+        'Nunito',
+        'Ubuntu',
+        'Inconsolata',
+        'Smallest Pixel',
     };
 
     GradientCycle = 0;
@@ -155,33 +122,74 @@ end;
 function Library:GetFontFace()
     local FontName = Library.FontName or 'Montserrat';
 
-    if Library.FontBuilders and Library.FontBuilders[FontName] then
-        return Library.FontBuilders[FontName]();
+    local Definitions = {
+        ['Default'] = function()
+            return Font.fromEnum(Enum.Font.Code);
+        end,
+        ['Montserrat'] = function()
+            return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+        end,
+        ['Roboto'] = function()
+            return Font.new('rbxasset://fonts/families/Roboto.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end,
+        ['Inter'] = function()
+            return Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+        end,
+        ['Source Sans'] = function()
+            return Font.new('rbxasset://fonts/families/SourceSansPro.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end,
+        ['Open Sans'] = function()
+            return Font.new('rbxasset://fonts/families/OpenSans.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end,
+        ['Gotham'] = function()
+            return Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+        end,
+        ['Poppins'] = function()
+            return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+        end,
+        ['Nunito'] = function()
+            return Font.new('rbxasset://fonts/families/Roboto.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end,
+        ['Ubuntu'] = function()
+            return Font.new('rbxasset://fonts/families/Ubuntu.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end,
+        ['Inconsolata'] = function()
+            return Font.new('rbxasset://fonts/families/Inconsolata.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+        end,
+        ['Smallest Pixel'] = function()
+            return Font.fromEnum(Enum.Font.Arcade);
+        end,
+    };
+
+    local Builder = Definitions[FontName] or Definitions.Montserrat;
+    local Success, Face = pcall(Builder);
+
+    if Success and Face then
+        return Face;
     end;
 
-    return Font.new('rbxasset://fonts/families/Montserrat.json', Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+    return Font.fromEnum(Enum.Font.Code);
 end;
 
 function Library:GetLegacyFont()
     local FontName = Library.FontName or 'Montserrat';
 
-    local LegacyMap = {
-        ['Default'] = Enum.Font.Code;
-        ['Smallest Pixel'] = Enum.Font.Arcade;
-        ['Montserrat'] = Enum.Font.GothamMedium;
-        ['Inter'] = Enum.Font.GothamMedium;
-        ['Roboto'] = Enum.Font.Gotham;
-        ['Roboto Mono'] = Enum.Font.Code;
-        ['Gotham'] = Enum.Font.GothamMedium;
-        ['Ubuntu'] = Enum.Font.Gotham;
-        ['Poppins'] = Enum.Font.GothamMedium;
-        ['Open Sans'] = Enum.Font.Gotham;
-        ['Builder Sans'] = Enum.Font.GothamMedium;
-        ['Source Sans'] = Enum.Font.Gotham;
-        ['Nunito'] = Enum.Font.GothamMedium;
+    local Legacy = {
+        ['Default'] = Enum.Font.Code,
+        ['Montserrat'] = Enum.Font.GothamMedium,
+        ['Roboto'] = Enum.Font.Gotham,
+        ['Inter'] = Enum.Font.GothamMedium,
+        ['Source Sans'] = Enum.Font.SourceSans,
+        ['Open Sans'] = Enum.Font.Gotham,
+        ['Gotham'] = Enum.Font.GothamMedium,
+        ['Poppins'] = Enum.Font.GothamMedium,
+        ['Nunito'] = Enum.Font.Gotham,
+        ['Ubuntu'] = Enum.Font.Gotham,
+        ['Inconsolata'] = Enum.Font.Code,
+        ['Smallest Pixel'] = Enum.Font.Arcade,
     };
 
-    return LegacyMap[FontName] or Enum.Font.GothamMedium;
+    return Legacy[FontName] or Enum.Font.GothamMedium;
 end;
 
 function Library:ApplyFontToInstance(Instance)
@@ -1163,8 +1171,10 @@ do
 
     function Funcs:AddLabel(Text, DoesWrap)
         local Label = {};
+        local Unsafe = false;
 
         if type(Text) == 'table' then
+            Unsafe = Text.Unsafe;
             DoesWrap = Text.Wrap or DoesWrap;
             Text = Text.Text or '';
         end;
@@ -1182,6 +1192,10 @@ do
             ZIndex = 5;
             Parent = Container;
         });
+
+        if Unsafe then
+            Library:MarkUnsafeText(TextLabel);
+        end;
 
         if DoesWrap then
             local Y = select(2, Library:GetTextBounds(Text, Enum.Font.Code, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
@@ -1705,10 +1719,9 @@ do
         local Groupbox = self;
         local Container = Groupbox.Container;
 
-        local NameWidth = Library:GetTextBounds(Info.Text, nil, 14) + 2;
-        local ValueWidth = math.max(Library:GetTextBounds(tostring(Info.Default), nil, 14) + 8, 36);
-        local TextGap = 8;
-        local PrefixWidth = NameWidth + TextGap + ValueWidth + TextGap;
+        local NameWidth = Library:GetTextBounds(Info.Text, Enum.Font.Code, 14) + 2;
+        local ValueWidth = Library:GetTextBounds(tostring(Info.Default), Enum.Font.Code, 14) + 4;
+        local PrefixWidth = NameWidth + ValueWidth + 2;
 
         local SliderRow = Library:Create('Frame', {
             BackgroundTransparency = 1;
@@ -1727,18 +1740,18 @@ do
         });
 
         local ValueLabel = Library:CreateLabel({
-            Position = UDim2.new(0, NameWidth + TextGap, 0, 0);
+            Position = UDim2.new(0, NameWidth, 0, 0);
             Size = UDim2.new(0, ValueWidth, 1, 0);
             TextSize = 14;
             Text = tostring(Info.Default);
-            TextColor3 = Library.FontColor;
+            TextColor3 = Library.FontColor2;
             TextXAlignment = Enum.TextXAlignment.Left;
             ZIndex = 5;
             Parent = SliderRow;
         });
 
         Library:AddToRegistry(ValueLabel, {
-            TextColor3 = 'FontColor';
+            TextColor3 = 'FontColor2';
         });
 
         local SliderOuter = Library:Create('Frame', {
@@ -1829,10 +1842,9 @@ do
 
             ValueLabel.Text = TextValue .. Suffix;
 
-            local NewValueWidth = math.max(Library:GetTextBounds(ValueLabel.Text, nil, 14) + 8, 36);
-            local NewPrefixWidth = NameWidth + TextGap + NewValueWidth + TextGap;
+            local NewValueWidth = Library:GetTextBounds(ValueLabel.Text, Enum.Font.Code, 14) + 4;
+            local NewPrefixWidth = NameWidth + NewValueWidth + 2;
 
-            ValueLabel.Position = UDim2.new(0, NameWidth + TextGap, 0, 0);
             ValueLabel.Size = UDim2.new(0, NewValueWidth, 1, 0);
             SliderOuter.Position = UDim2.new(0, NewPrefixWidth, 0, 2);
             SliderOuter.Size = UDim2.new(1, -NewPrefixWidth, 0, 13);
@@ -1952,6 +1964,10 @@ do
                 ZIndex = 5;
                 Parent = Container;
             });
+
+            if Info.Unsafe then
+                Library:MarkUnsafeText(DropdownLabel);
+            end;
 
             Groupbox:AddBlank(3);
         end
@@ -2951,45 +2967,55 @@ function Library:SetWatermarkVisibility(Bool)
 end;
 
 function Library:SetWatermark(Text)
+    if not Library.Watermark or not Library.WatermarkText then
+        return;
+    end;
+
     Library.WatermarkText.RichText = true;
     local PlainText = Text:gsub('<[^>]+>', '');
     local X = Library:GetTextBounds(PlainText, nil, 14);
-    Library.Watermark.Size = UDim2.new(0, math.max(X + 16, 180), 0, 24);
+    Library.Watermark.Size = UDim2.fromOffset(math.max(X + 16, 260), 24);
     Library.WatermarkText.Text = Text;
 end;
 
 function Library:StartWatermark()
-    if Library.WatermarkUpdater then
+    if Library.WatermarkConnection then
+        Library:SetWatermarkVisibility(true);
         return;
     end;
 
-    local Frames = 0;
-    local LastTick = tick();
+    Library.WatermarkFPSCount = 0;
+    Library.WatermarkFPSTimer = 0;
+    Library.WatermarkFPS = 0;
 
-    Library.WatermarkUpdater = RunService.RenderStepped:Connect(function()
-        Frames = Frames + 1;
-
-        local Now = tick();
-        if Now - LastTick < 0.5 then
+    Library.WatermarkConnection = RunService.Heartbeat:Connect(function(Delta)
+        if not Library.WatermarkText then
             return;
         end;
 
-        local FPS = math.max(1, math.floor(Frames / (Now - LastTick)));
-        Frames = 0;
-        LastTick = Now;
+        Library.WatermarkFPSCount = Library.WatermarkFPSCount + 1;
+        Library.WatermarkFPSTimer = Library.WatermarkFPSTimer + Delta;
 
+        if Library.WatermarkFPSTimer >= 0.5 then
+            Library.WatermarkFPS = math.floor(Library.WatermarkFPSCount / Library.WatermarkFPSTimer);
+            Library.WatermarkFPSCount = 0;
+            Library.WatermarkFPSTimer = 0;
+        end;
+
+        local TimeText = os.date('%H:%M:%S');
         local UID = LocalPlayer.UserId;
-        local TimeStr = os.date('%H:%M:%S');
-
-        Library:SetWatermark(string.format(
+        local Text = string.format(
             '<font color="rgb(255,255,255)">chad</font><font color="rgb(255,119,68)">vision</font> | %d FPS | %s | %d',
-            FPS,
-            TimeStr,
+            Library.WatermarkFPS,
+            TimeText,
             UID
-        ));
+        );
+
+        Library:SetWatermark(Text);
     end);
 
-    Library:GiveSignal(Library.WatermarkUpdater);
+    table.insert(Library.Signals, Library.WatermarkConnection);
+    Library:SetWatermarkVisibility(true);
 end;
 
 function Library:Notify(Text, Time)
@@ -3098,7 +3124,7 @@ function Library:CreateWindow(...)
     if type(Config.Title) ~= 'string' then Config.Title = 'No title' end
     
     if typeof(Config.Position) ~= 'UDim2' then Config.Position = UDim2.fromOffset(175, 50) end
-    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(900, 600) end
+    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(780, 540) end
 
     if Config.Center then
         Config.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -3140,7 +3166,7 @@ function Library:CreateWindow(...)
     local BrandRow = Library:Create('Frame', {
         BackgroundTransparency = 1;
         Position = UDim2.new(0, 10, 0, 4);
-        Size = UDim2.new(1, -20, 0, 18);
+        Size = UDim2.new(1, -20, 0, 20);
         Active = true;
         ZIndex = 2;
         Parent = Inner;
@@ -3160,7 +3186,7 @@ function Library:CreateWindow(...)
 
     local MainTabArea = Library:Create('Frame', {
         BackgroundTransparency = 1;
-        Position = UDim2.new(0, 10, 0, 24);
+        Position = UDim2.new(0, 10, 0, 26);
         Size = UDim2.new(1, -20, 0, 26);
         ZIndex = 2;
         Parent = Inner;
@@ -3212,7 +3238,7 @@ function Library:CreateWindow(...)
     local ScrollGradientBar = Library:Create('Frame', {
         BackgroundColor3 = Color3.new(1, 1, 1);
         BorderSizePixel = 0;
-        Position = UDim2.new(0, 10, 0, 52);
+        Position = UDim2.new(0, 10, 0, 54);
         Size = UDim2.new(1, -20, 0, 2);
         ClipsDescendants = true;
         ZIndex = 3;
@@ -3242,9 +3268,8 @@ function Library:CreateWindow(...)
     local TabContainer = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
         BorderColor3 = Library.OutlineColor;
-        ClipsDescendants = true;
-        Position = UDim2.new(0, 10, 0, 58);
-        Size = UDim2.new(1, -20, 1, -68);
+        Position = UDim2.new(0, 10, 0, 60);
+        Size = UDim2.new(1, -20, 1, -70);
         ZIndex = 2;
         Parent = Inner;
     });
@@ -3264,8 +3289,7 @@ function Library:CreateWindow(...)
         local BoxOuter = Library:Create('Frame', {
             BackgroundColor3 = Library.BackgroundColor;
             BorderColor3 = Library.OutlineColor;
-            ClipsDescendants = true;
-            Size = UDim2.new(1, 0, 0, 120);
+            Size = UDim2.new(1, 0, 0, 507);
             ZIndex = 2;
             Parent = ParentFrame;
         });
@@ -3310,21 +3334,12 @@ function Library:CreateWindow(...)
             Parent = BoxInner;
         });
 
-        local Container = Library:Create('ScrollingFrame', {
+        local Container = Library:Create('Frame', {
             BackgroundTransparency = 1;
-            BorderSizePixel = 0;
-            ScrollBarThickness = 3;
-            ScrollBarImageColor3 = Library.AccentColor;
             Position = UDim2.new(0, 4, 0, 20);
-            Size = UDim2.new(1, -8, 1, -22);
-            CanvasSize = UDim2.new(0, 0, 0, 0);
-            ClipsDescendants = true;
+            Size = UDim2.new(1, -4, 1, -20);
             ZIndex = 1;
             Parent = BoxInner;
-        });
-
-        Library:AddToRegistry(Container, {
-            ScrollBarImageColor3 = 'AccentColor';
         });
 
         Library:Create('UIListLayout', {
@@ -3342,21 +3357,8 @@ function Library:CreateWindow(...)
                 end;
             end;
 
-            Groupbox.Container.CanvasSize = UDim2.new(0, 0, 0, Size);
-
-            local ContentHeight = 20 + Size + 2;
-            local ParentHeight = ParentFrame.AbsoluteSize.Y;
-
-            if ParentHeight > 0 then
-                BoxOuter.Size = UDim2.new(1, 0, 0, math.min(ContentHeight, ParentHeight));
-            else
-                BoxOuter.Size = UDim2.new(1, 0, 0, ContentHeight);
-            end;
+            BoxOuter.Size = UDim2.new(1, 0, 0, 20 + Size + 2);
         end;
-
-        ParentFrame:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()
-            Groupbox:Resize();
-        end);
 
         Groupbox.Container = Container;
         Groupbox.Side = Side;
@@ -3445,7 +3447,6 @@ function Library:CreateWindow(...)
 
         local SubTabHolder = Library:Create('Frame', {
             BackgroundTransparency = 1;
-            ClipsDescendants = true;
             Position = UDim2.new(0, 8, 0, 30);
             Size = UDim2.new(1, -16, 1, -38);
             ZIndex = 2;
@@ -3576,7 +3577,7 @@ function Library:CreateWindow(...)
                 end;
 
                 SubTabFrame.Visible = true;
-                SubTabLabel.TextColor3 = Library.FontColor;
+                SubTabLabel.TextColor3 = Library.AccentColor;
                 SubTabHighlight.Visible = true;
                 Tab.ActiveSubTab = SubTab;
             end;
@@ -3745,10 +3746,8 @@ function Library:CreateWindow(...)
     Window.Holder = Outer;
     Library.WindowHolder = Outer;
 
-    Library:SetWatermark(Library.BrandRichText);
-    Library:SetWatermarkVisibility(true);
-    Library.Watermark.Position = UDim2.new(0, 12, 0, 12);
     Library:StartWatermark();
+    Library.Watermark.Position = UDim2.new(0, 12, 0, 12);
 
     return Window;
 end;
