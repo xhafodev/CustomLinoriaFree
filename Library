@@ -34,6 +34,7 @@ local Library = {
     SelectedTabColor = Color3.fromRGB(34, 34, 34);
     BackgroundColor = Color3.fromRGB(30, 30, 30);
     AccentColor = Color3.fromRGB(255, 119, 68);
+    AccentColorLight = Color3.fromRGB(255, 164, 120);
     OutlineColor = Color3.fromRGB(48, 48, 48);
     BrandCapColor = Color3.fromRGB(255, 119, 68);
     BrandBodyColor = Color3.fromRGB(255, 255, 255);
@@ -70,10 +71,10 @@ table.insert(Library.Signals, RenderStepped:Connect(function(Delta)
         Library.CurrentRainbowColor = Color3.fromHSV(Hue, 0.8, 1);
     end
 
-    Library.GradientOffset = (Library.GradientOffset + Delta * 0.35) % 1;
+    Library.GradientOffset = Library.GradientOffset + Delta * 0.18;
 
     if Library.ScrollGradient then
-        Library.ScrollGradient.Offset = Vector2.new(Library.GradientOffset, 0);
+        Library.ScrollGradient.Offset = Vector2.new(Library.GradientOffset % 1, 0);
     end
 end))
 
@@ -153,6 +154,126 @@ function Library:MakeDraggable(Instance, Cutoff)
             end;
         end;
     end)
+end;
+
+function Library:GetLighterColor(Color)
+    local H, S, V = Color3.toHSV(Color);
+    return Color3.fromHSV(H, S * 0.65, math.clamp(V * 1.18, 0, 1));
+end;
+
+function Library:MakeWindowDraggable(Outer, Cutoff)
+    Outer.Active = true;
+
+    local Ghost = Library:Create('Frame', {
+        BackgroundTransparency = 1;
+        BorderColor3 = Library.AccentColor;
+        BorderSizePixel = 1;
+        Visible = false;
+        ZIndex = 0;
+        Parent = ScreenGui;
+    });
+
+    Library:AddToRegistry(Ghost, {
+        BorderColor3 = 'AccentColor';
+    });
+
+    Outer.InputBegan:Connect(function(Input)
+        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+            return;
+        end;
+
+        local ObjPos = Vector2.new(
+            Mouse.X - Outer.AbsolutePosition.X,
+            Mouse.Y - Outer.AbsolutePosition.Y
+        );
+
+        if ObjPos.Y > (Cutoff or 58) then
+            return;
+        end;
+
+        Ghost.Size = Outer.Size;
+        Ghost.AnchorPoint = Outer.AnchorPoint;
+        Ghost.Position = Outer.Position;
+        Ghost.Visible = true;
+
+        while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+            local NewPosition = UDim2.new(
+                0,
+                Mouse.X - ObjPos.X + (Outer.Size.X.Offset * Outer.AnchorPoint.X),
+                0,
+                Mouse.Y - ObjPos.Y + (Outer.Size.Y.Offset * Outer.AnchorPoint.Y)
+            );
+
+            Outer.Position = NewPosition;
+            Ghost.Position = NewPosition;
+            Ghost.Size = Outer.Size;
+
+            RenderStepped:Wait();
+        end;
+
+        Ghost.Visible = false;
+    end);
+end;
+
+function Library:MakeResizable(Outer, MinSize)
+    MinSize = MinSize or Vector2.new(520, 380);
+
+    local ResizeHolder = Library:Create('Frame', {
+        AnchorPoint = Vector2.new(1, 1);
+        Position = UDim2.new(1, -2, 1, -2);
+        Size = UDim2.fromOffset(18, 18);
+        BackgroundTransparency = 1;
+        ClipsDescendants = true;
+        Active = true;
+        ZIndex = 50;
+        Parent = Outer;
+    });
+
+    local ResizeCircle = Library:Create('Frame', {
+        BackgroundColor3 = Library.AccentColor;
+        Position = UDim2.fromOffset(-18, -18);
+        Size = UDim2.fromOffset(36, 36);
+        ZIndex = 51;
+        Parent = ResizeHolder;
+    });
+
+    Library:Create('UICorner', {
+        CornerRadius = UDim.new(1, 0);
+        Parent = ResizeCircle;
+    });
+
+    Library:AddToRegistry(ResizeCircle, {
+        BackgroundColor3 = 'AccentColor';
+    });
+
+    Library:OnHighlight(ResizeHolder, ResizeCircle,
+        { BackgroundColor3 = 'AccentColorLight' },
+        { BackgroundColor3 = 'AccentColor' }
+    );
+
+    ResizeHolder.InputBegan:Connect(function(Input)
+        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+            return;
+        end;
+
+        local StartSize = Outer.Size;
+        local StartMouse = Vector2.new(Mouse.X, Mouse.Y);
+
+        while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+            local Delta = Vector2.new(Mouse.X, Mouse.Y) - StartMouse;
+
+            Outer.Size = UDim2.fromOffset(
+                math.max(MinSize.X, StartSize.X.Offset + Delta.X),
+                math.max(MinSize.Y, StartSize.Y.Offset + Delta.Y)
+            );
+
+            if Library.WindowHolder == Outer then
+                Library:PositionColorPicker();
+            end;
+
+            RenderStepped:Wait();
+        end;
+    end);
 end;
 
 function Library:AddToolTip(InfoStr, HoverInstance)
@@ -270,6 +391,7 @@ function Library:GetDarkerColor(Color)
     return Color3.fromHSV(H, S, V / 5);
 end; 
 Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor);
+Library.AccentColorLight = Library:GetLighterColor(Library.AccentColor);
 
 function Library:AddToRegistry(Instance, Properties, IsHud)
     local Idx = #Library.Registry + 1;
@@ -1352,8 +1474,9 @@ do
         local Groupbox = self;
         local Container = Groupbox.Container;
 
-        local NameWidth = Library:GetTextBounds(Info.Text, Enum.Font.Code, 14) + 6;
-        local ValueWidth = 52;
+        local NameWidth = Library:GetTextBounds(Info.Text, Enum.Font.Code, 14) + 2;
+        local ValueWidth = Library:GetTextBounds(tostring(Info.Default), Enum.Font.Code, 14) + 4;
+        local PrefixWidth = NameWidth + ValueWidth + 2;
 
         local SliderRow = Library:Create('Frame', {
             BackgroundTransparency = 1;
@@ -1362,7 +1485,7 @@ do
             Parent = Container;
         });
 
-        Library:CreateLabel({
+        local NameLabel = Library:CreateLabel({
             Size = UDim2.new(0, NameWidth, 1, 0);
             TextSize = 14;
             Text = Info.Text;
@@ -1388,8 +1511,8 @@ do
 
         local SliderOuter = Library:Create('Frame', {
             BorderColor3 = Color3.new(0, 0, 0);
-            Position = UDim2.new(0, NameWidth + ValueWidth + 4, 0, 2);
-            Size = UDim2.new(1, -(NameWidth + ValueWidth + 4), 0, 13);
+            Position = UDim2.new(0, PrefixWidth, 0, 2);
+            Size = UDim2.new(1, -PrefixWidth, 0, 13);
             ZIndex = 5;
             Parent = SliderRow;
         });
@@ -1473,6 +1596,13 @@ do
             end;
 
             ValueLabel.Text = TextValue .. Suffix;
+
+            local NewValueWidth = Library:GetTextBounds(ValueLabel.Text, Enum.Font.Code, 14) + 4;
+            local NewPrefixWidth = NameWidth + NewValueWidth + 2;
+
+            ValueLabel.Size = UDim2.new(0, NewValueWidth, 1, 0);
+            SliderOuter.Position = UDim2.new(0, NewPrefixWidth, 0, 2);
+            SliderOuter.Size = UDim2.new(1, -NewPrefixWidth, 0, 13);
 
             local X = math.ceil(Library:MapValue(Slider.Value, Slider.Min, Slider.Max, 0, Slider.MaxSize));
 
@@ -2577,9 +2707,10 @@ function Library:SetWatermarkVisibility(Bool)
 end;
 
 function Library:SetWatermark(Text)
-    local X, Y = Library:GetTextBounds(Text, Enum.Font.Code, 14);
-    Library.Watermark.Size = UDim2.new(0, 262, 0, 24);
-
+    Library.WatermarkText.RichText = true;
+    local PlainText = Text:gsub('<[^>]+>', '');
+    local X = Library:GetTextBounds(PlainText, Enum.Font.Code, 14);
+    Library.Watermark.Size = UDim2.new(0, math.max(X + 16, 110), 0, 24);
     Library.WatermarkText.Text = Text;
 end;
 
@@ -2711,7 +2842,8 @@ function Library:CreateWindow(...)
         Parent = ScreenGui;
     });
 
-    Library:MakeDraggable(Outer, 58);
+    Library:MakeWindowDraggable(Outer, 58);
+    Library:MakeResizable(Outer);
 
     local Inner = Library:Create('Frame', {
         BackgroundColor3 = Library.MainColor;
@@ -2731,41 +2863,15 @@ function Library:CreateWindow(...)
     local BrandRow = Library:Create('Frame', {
         BackgroundTransparency = 1;
         Position = UDim2.new(0, 10, 0, 8);
-        Size = UDim2.new(1, -20, 0, 22);
+        Size = UDim2.new(1, -20, 0, 20);
         ZIndex = 2;
         Parent = Inner;
     });
 
-    local Bottle = Library:Create('Frame', {
-        BackgroundTransparency = 1;
-        Size = UDim2.fromOffset(12, 18);
-        Position = UDim2.fromOffset(0, 1);
-        ZIndex = 3;
-        Parent = BrandRow;
-    });
-
-    Library:Create('Frame', {
-        BackgroundColor3 = Library.BrandCapColor;
-        BorderSizePixel = 0;
-        Size = UDim2.new(1, 0, 0, 5);
-        ZIndex = 4;
-        Parent = Bottle;
-    });
-
-    Library:Create('Frame', {
-        BackgroundColor3 = Library.BrandBodyColor;
-        BorderSizePixel = 0;
-        Position = UDim2.fromOffset(2, 5);
-        Size = UDim2.new(1, -4, 1, -5);
-        ZIndex = 4;
-        Parent = Bottle;
-    });
-
     local BrandLabel = Library:CreateLabel2({
-        Position = UDim2.fromOffset(18, 0);
-        Size = UDim2.new(1, -18, 1, 0);
+        Size = UDim2.new(1, 0, 1, 0);
         RichText = true;
-        Text = Config.BrandRichText or ('<font color="rgb(255,255,255)">.gg/</font><font color="rgb(255,119,68)">interfaces</font>');
+        Text = Config.BrandRichText or ('<font color="rgb(255,255,255)">bottle</font><font color="rgb(255,119,68)">cap</font>');
         TextXAlignment = Enum.TextXAlignment.Left;
         TextSize = 15;
         ZIndex = 3;
@@ -2774,7 +2880,7 @@ function Library:CreateWindow(...)
 
     local MainTabArea = Library:Create('Frame', {
         BackgroundTransparency = 1;
-        Position = UDim2.new(0, 10, 0, 32);
+        Position = UDim2.new(0, 10, 0, 30);
         Size = UDim2.new(1, -20, 0, 26);
         ZIndex = 2;
         Parent = Inner;
@@ -2794,10 +2900,25 @@ function Library:CreateWindow(...)
         Parent = TabButtons;
     });
 
+    Window.TabOrder = {};
+
+    function Window:RefreshTabLayout()
+        local Count = #self.TabOrder;
+        if Count == 0 then
+            return;
+        end;
+
+        local Gap = 4;
+        for _, Tab in next, self.TabOrder do
+            Tab.TabButton.Size = UDim2.new(1 / Count, -(Gap * (Count - 1) / Count), 1, 0);
+            Tab.TabButtonLabel.TextXAlignment = Enum.TextXAlignment.Center;
+        end;
+    end;
+
     local ScrollGradientBar = Library:Create('Frame', {
         BackgroundColor3 = Color3.new(1, 1, 1);
         BorderSizePixel = 0;
-        Position = UDim2.new(0, 10, 0, 60);
+        Position = UDim2.new(0, 10, 0, 58);
         Size = UDim2.new(1, -20, 0, 2);
         ClipsDescendants = true;
         ZIndex = 3;
@@ -2807,9 +2928,10 @@ function Library:CreateWindow(...)
     Library.ScrollGradient = Library:Create('UIGradient', {
         Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Library.AccentColor),
-            ColorSequenceKeypoint.new(0.35, Color3.new(1, 1, 1)),
-            ColorSequenceKeypoint.new(0.65, Library.AccentColor),
-            ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)),
+            ColorSequenceKeypoint.new(0.25, Color3.new(1, 1, 1)),
+            ColorSequenceKeypoint.new(0.5, Library.AccentColor),
+            ColorSequenceKeypoint.new(0.75, Color3.new(1, 1, 1)),
+            ColorSequenceKeypoint.new(1, Library.AccentColor),
         });
         Rotation = 0;
         Parent = ScrollGradientBar;
@@ -2819,9 +2941,10 @@ function Library:CreateWindow(...)
         Color = function()
             return ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Library.AccentColor),
-                ColorSequenceKeypoint.new(0.35, Color3.new(1, 1, 1)),
-                ColorSequenceKeypoint.new(0.65, Library.AccentColor),
-                ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(0.25, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(0.5, Library.AccentColor),
+                ColorSequenceKeypoint.new(0.75, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(1, Library.AccentColor),
             });
         end
     });
@@ -2829,8 +2952,8 @@ function Library:CreateWindow(...)
     local TabContainer = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
         BorderColor3 = Library.OutlineColor;
-        Position = UDim2.new(0, 10, 0, 66);
-        Size = UDim2.new(1, -20, 1, -76);
+        Position = UDim2.new(0, 10, 0, 64);
+        Size = UDim2.new(1, -20, 1, -74);
         ZIndex = 2;
         Parent = Inner;
     });
@@ -2939,12 +3062,10 @@ function Library:CreateWindow(...)
             ActiveSubTab = nil;
         };
 
-        local TabButtonWidth = Library:GetTextBounds(Name, Enum.Font.Code, 16);
-
         local TabButton = Library:Create('Frame', {
             BackgroundColor3 = Library.BackgroundColor;
             BorderColor3 = Library.OutlineColor;
-            Size = UDim2.new(0, TabButtonWidth + 16, 1, 0);
+            Size = UDim2.new(0.125, -4, 1, 0);
             Active = true;
             ZIndex = 1;
             Parent = TabButtons;
@@ -3211,6 +3332,12 @@ function Library:CreateWindow(...)
             Tab:ShowTab();
         end;
 
+        Tab.TabButton = TabButton;
+        Tab.TabButtonLabel = TabButtonLabel;
+
+        table.insert(Window.TabOrder, Tab);
+        Window:RefreshTabLayout();
+
         Window.Tabs[Name] = Tab;
         return Tab;
     end;
@@ -3301,6 +3428,10 @@ function Library:CreateWindow(...)
 
     Window.Holder = Outer;
     Library.WindowHolder = Outer;
+
+    Library:SetWatermark('<font color="rgb(255,255,255)">bottle</font><font color="rgb(255,119,68)">cap</font>');
+    Library:SetWatermarkVisibility(true);
+    Library.Watermark.Position = UDim2.new(0, 12, 0, 12);
 
     return Window;
 end;
