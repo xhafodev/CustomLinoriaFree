@@ -40,6 +40,9 @@ local Library = {
 
     OpenedFrames = {};
 
+    ColorClipboard = Color3.new(1, 1, 1);
+    ActiveColorPicker = nil;
+
     Signals = {};
     ScreenGui = ScreenGui;
 };
@@ -353,20 +356,19 @@ do
 
     function Funcs:AddColorPicker(Idx, Info)
         local ToggleLabel = self.TextLabel;
-        local Container = self.Container;
 
         local ColorPicker = {
             Value = Info.Default;
             Type = 'ColorPicker';
-            Title = type(Info.Title) == 'string' and Info.Title or 'Color picker',
+            Title = type(Info.Title) == 'string' and Info.Title or 'Colorpicker';
+            Flag = Idx;
+            Hue = 0;
+            Sat = 0;
+            Vib = 0;
         };
 
         function ColorPicker:SetHSVFromRGB(Color)
-            local H, S, V = Color3.toHSV(Color);
-
-            ColorPicker.Hue = H;
-            ColorPicker.Sat = S;
-            ColorPicker.Vib = V;
+            ColorPicker.Hue, ColorPicker.Sat, ColorPicker.Vib = Color3.toHSV(Color);
         end;
 
         ColorPicker:SetHSVFromRGB(ColorPicker.Value);
@@ -380,237 +382,40 @@ do
             Parent = ToggleLabel;
         });
 
-        local RelativeOffset = 0;
-
-        for _, Element in next, Container:GetChildren() do
-            if not Element:IsA('UIListLayout') then
-                RelativeOffset = RelativeOffset + Element.Size.Y.Offset;
-            end;
-        end;
-
-        local PickerFrameOuter = Library:Create('Frame', {
-            Name = 'Color';
-            BackgroundColor3 = Color3.new(1, 1, 1);
-            BorderColor3 = Color3.new(0, 0, 0);
-            Position = UDim2.new(0, 4, 0, 20 + RelativeOffset + 1);
-            Size = UDim2.new(1, -13, 0, 253);
-            Visible = false;
-            ZIndex = 15;
-            Parent = Container.Parent;
-        });
-
-        local PickerFrameInner = Library:Create('Frame', {
-            BackgroundColor3 = Library.BackgroundColor;
-            BorderColor3 = Library.OutlineColor;
-            BorderMode = Enum.BorderMode.Inset;
-            Size = UDim2.new(1, 0, 1, 0);
-            ZIndex = 16;
-            Parent = PickerFrameOuter;
-        });
-
-        local Highlight = Library:Create('Frame', {
-            BackgroundColor3 = Library.AccentColor;
-            BorderSizePixel = 0;
-            Size = UDim2.new(1, 0, 0, 2);
-            ZIndex = 17;
-            Parent = PickerFrameInner;
-        });
-
-        local SatVibMapOuter = Library:Create('Frame', {
-            BorderColor3 = Color3.new(0, 0, 0);
-            Position = UDim2.new(0, 4, 0, 25);
-            Size = UDim2.new(0, 200, 0, 200);
-            ZIndex = 17;
-            Parent = PickerFrameInner;
-        });
-
-        local SatVibMapInner = Library:Create('Frame', {
-            BackgroundColor3 = Library.BackgroundColor;
-            BorderColor3 = Library.OutlineColor;
-            BorderMode = Enum.BorderMode.Inset;
-            Size = UDim2.new(1, 0, 1, 0);
-            ZIndex = 18;
-            Parent = SatVibMapOuter;
-        });
-
-        local SatVibMap = Library:Create('ImageLabel', {
-            BorderSizePixel = 0;
-            Size = UDim2.new(1, 0, 1, 0);
-            ZIndex = 18;
-            Image = 'rbxassetid://4155801252';
-            Parent = SatVibMapInner;
-        });
-
-        local HueSelectorOuter = Library:Create('Frame', {
-            BorderColor3 = Color3.new(0, 0, 0);
-            Position = UDim2.new(0, 208, 0, 25);
-            Size = UDim2.new(0, 15, 0, 200);
-            ZIndex = 17;
-            Parent = PickerFrameInner;
-        });
-
-        local HueSelectorInner = Library:Create('Frame', {
-            BackgroundColor3 = Color3.new(1, 1, 1);
-            BorderSizePixel = 0;
-            Size = UDim2.new(1, 0, 1, 0);
-            ZIndex = 18;
-            Parent = HueSelectorOuter;
-        });
-
-        local HueTextSize = Library:GetTextBounds('Hex color', Enum.Font.Code, 16) + 3
-        local RgbTextSize = Library:GetTextBounds('255, 255, 255', Enum.Font.Code, 16) + 3
-
-        local HueBoxOuter = Library:Create('Frame', {
-            BorderColor3 = Color3.new(0, 0, 0);
-            Position = UDim2.fromOffset(4, 228),
-            Size = UDim2.new(0.5, -6, 0, 20),
-            ZIndex = 18,
-            Parent = PickerFrameInner;
-        });
-
-        local HueBoxInner = Library:Create('Frame', {
-            BackgroundColor3 = Library.MainColor;
-            BorderColor3 = Library.OutlineColor;
-            BorderMode = Enum.BorderMode.Inset;
-            Size = UDim2.new(1, 0, 1, 0);
-            ZIndex = 18,
-            Parent = HueBoxOuter;
-        });
-
-        Library:Create('UIGradient', {
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(212, 212, 212))
-            });
-            Rotation = 90;
-            Parent = HueBoxInner;
-        });
-
-        local HueBox = Library:Create('TextBox', {
-            BackgroundTransparency = 1;
-            Position = UDim2.new(0, 5, 0, 0);
-            Size = UDim2.new(1, -5, 1, 0);
-            Font = Enum.Font.Code;
-            PlaceholderColor3 = Color3.fromRGB(190, 190, 190);
-            PlaceholderText = 'Hex color',
-            Text = '#FFFFFF',
-            TextColor3 = Library.FontColor;
-            TextSize = 14;
-            TextStrokeTransparency = 0;
-            TextXAlignment = Enum.TextXAlignment.Left;
-            ZIndex = 20,
-            Parent = HueBoxInner;
-        });
-
-        local RgbBoxBase = Library:Create(HueBoxOuter:Clone(), {
-            Position = UDim2.new(0.5, 2, 0, 228),
-            Size = UDim2.new(0.5, -6, 0, 20),
-            Parent = PickerFrameInner
-        })  
-
-        local RgbBox = Library:Create(RgbBoxBase.Frame:FindFirstChild('TextBox'), {
-            Text = '255, 255, 255',
-            PlaceholderText = 'RGB color',
-            TextColor3 = Library.FontColor,
-        })
-
-        local DisplayLabel = Library:CreateLabel({
-            Size = UDim2.new(1, 0, 0, 14);
-            Position = UDim2.fromOffset(5, 5);
-            TextXAlignment = Enum.TextXAlignment.Left;
-            TextSize = 14;
-            Text = ColorPicker.Title,--Info.Default;
-            TextWrapped = false;
-            ZIndex = 16;
-            Parent = PickerFrameInner;
-        });
-
-
-        Library:AddToRegistry(PickerFrameInner, { BackgroundColor3 = 'BackgroundColor'; BorderColor3 = 'OutlineColor'; });
-        Library:AddToRegistry(Highlight, { BackgroundColor3 = 'AccentColor'; });
-        Library:AddToRegistry(SatVibMapInner, { BackgroundColor3 = 'BackgroundColor'; BorderColor3 = 'OutlineColor'; });
-
-        Library:AddToRegistry(HueBoxInner, { BackgroundColor3 = 'MainColor'; BorderColor3 = 'OutlineColor'; });
-        Library:AddToRegistry(RgbBoxBase.Frame, { BackgroundColor3 = 'MainColor'; BorderColor3 = 'OutlineColor'; });
-        Library:AddToRegistry(RgbBox, { TextColor3 = 'FontColor', });
-        Library:AddToRegistry(HueBox, { TextColor3 = 'FontColor', });
-
-        local SequenceTable = {};
-
-        for Hue = 0, 1, 0.1 do
-            table.insert(SequenceTable, ColorSequenceKeypoint.new(Hue, Color3.fromHSV(Hue, 1, 1)));
-        end;
-
-        local HueSelectorGradient = Library:Create('UIGradient', {
-            Color = ColorSequence.new(SequenceTable);
-            Rotation = 90;
-            Parent = HueSelectorInner;
-        });
-        
-        HueBox.FocusLost:Connect(function(enter)
-            if enter then
-                local success, result = pcall(Color3.fromHex, HueBox.Text)
-                if success and typeof(result) == 'Color3' then
-                    ColorPicker.Hue, ColorPicker.Sat, ColorPicker.Vib = Color3.toHSV(result)
-                end
-            end
-
-            ColorPicker:Display()
-        end)
-
-        RgbBox.FocusLost:Connect(function(enter)
-            if enter then
-                local r, g, b = RgbBox.Text:match('(%d+),%s*(%d+),%s*(%d+)')
-                if r and g and b then
-                    ColorPicker.Hue, ColorPicker.Sat, ColorPicker.Vib = Color3.toHSV(Color3.fromRGB(r, g, b))
-                end
-            end
-
-            ColorPicker:Display()
-        end)
-
         function ColorPicker:Display()
             ColorPicker.Value = Color3.fromHSV(ColorPicker.Hue, ColorPicker.Sat, ColorPicker.Vib);
-            SatVibMap.BackgroundColor3 = Color3.fromHSV(ColorPicker.Hue, 1, 1);
 
             Library:Create(DisplayFrame, {
                 BackgroundColor3 = ColorPicker.Value;
                 BorderColor3 = Library:GetDarkerColor(ColorPicker.Value);
             });
 
-            HueBox.Text = '#' .. ColorPicker.Value:ToHex()
-            RgbBox.Text = table.concat({ math.floor(ColorPicker.Value.R * 255), math.floor(ColorPicker.Value.G * 255), math.floor(ColorPicker.Value.B * 255) }, ', ')
+            if Library.ActiveColorPicker == ColorPicker then
+                Library:RefreshColorPickerUI();
+            end;
 
             if ColorPicker.Changed then
-                ColorPicker.Changed(ColorPicker.Value)
+                ColorPicker.Changed(ColorPicker.Value);
             end;
         end;
 
         function ColorPicker:OnChanged(Func)
             ColorPicker.Changed = Func;
-            Func(ColorPicker.Value)
+            Func(ColorPicker.Value);
         end;
 
         function ColorPicker:Show()
-            for Frame, Val in next, Library.OpenedFrames do
-                if Frame.Name == 'Color' then
-                    Frame.Visible = false;
-                    Library.OpenedFrames[Frame] = nil;
-                end;
-            end;
-
-            PickerFrameOuter.Visible = true;
-            Library.OpenedFrames[PickerFrameOuter] = true;
+            Library:ShowColorPicker(ColorPicker);
         end;
 
         function ColorPicker:Hide()
-            PickerFrameOuter.Visible = false;
-            Library.OpenedFrames[PickerFrameOuter] = nil;
+            if Library.ActiveColorPicker == ColorPicker then
+                Library:HideColorPicker();
+            end;
         end;
 
         function ColorPicker:SetValue(HSV)
             local Color = Color3.fromHSV(HSV[1], HSV[2], HSV[3]);
-
             ColorPicker:SetHSVFromRGB(Color);
             ColorPicker:Display();
         end;
@@ -620,69 +425,14 @@ do
             ColorPicker:Display();
         end;
 
-        SatVibMap.InputBegan:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-                while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                    local MinX = SatVibMap.AbsolutePosition.X;
-                    local MaxX = MinX + SatVibMap.AbsoluteSize.X;
-                    local MouseX = math.clamp(Mouse.X, MinX, MaxX);
-
-                    local MinY = SatVibMap.AbsolutePosition.Y;
-                    local MaxY = MinY + SatVibMap.AbsoluteSize.Y;
-                    local MouseY = math.clamp(Mouse.Y, MinY, MaxY);
-
-                    ColorPicker.Sat = (MouseX - MinX) / (MaxX - MinX);
-                    ColorPicker.Vib = 1 - ((MouseY - MinY) / (MaxY - MinY));
-                    ColorPicker:Display();
-
-                    RenderStepped:Wait();
-                end;
-
-                Library:AttemptSave();
-            end;
-        end);
-
-        HueSelectorInner.InputBegan:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-                while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                    local MinY = HueSelectorInner.AbsolutePosition.Y;
-                    local MaxY = MinY + HueSelectorInner.AbsoluteSize.Y;
-                    local MouseY = math.clamp(Mouse.Y, MinY, MaxY);
-
-                    ColorPicker.Hue = ((MouseY - MinY) / (MaxY - MinY));
-                    ColorPicker:Display();
-
-                    RenderStepped:Wait();
-                end;
-
-                Library:AttemptSave();
-            end;
-        end);
-
         DisplayFrame.InputBegan:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame() then
-                if PickerFrameOuter.Visible then
-                    ColorPicker:Hide();
-                else
-                    ColorPicker:Show();
-                end;
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                ColorPicker:Show();
             end;
         end);
-
-        Library:GiveSignal(InputService.InputBegan:Connect(function(Input)
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-                local AbsPos, AbsSize = PickerFrameOuter.AbsolutePosition, PickerFrameOuter.AbsoluteSize;
-
-                if Mouse.X < AbsPos.X or Mouse.X > AbsPos.X + AbsSize.X
-                    or Mouse.Y < (AbsPos.Y - 20 - 1) or Mouse.Y > AbsPos.Y + AbsSize.Y then
-
-                    ColorPicker:Hide();
-                end;
-            end;
-        end))
 
         ColorPicker:Display();
-        ColorPicker.DisplayFrame = DisplayFrame
+        ColorPicker.DisplayFrame = DisplayFrame;
 
         Options[Idx] = ColorPicker;
 
@@ -2378,6 +2128,438 @@ function Library:SetKeybindListVisibility(Bool)
     Library.KeybindFrame.Visible = Bool;
 end;
 
+function Library:InitColorPickerWindow()
+    if Library.ColorPickerOuter then
+        return;
+    end;
+
+    local Refs = {};
+    Library.ColorPickerRefs = Refs;
+
+    local Outer = Library:Create('Frame', {
+        Name = 'Color';
+        BorderColor3 = Color3.new(0, 0, 0);
+        Position = UDim2.new(0.5, 300, 0.5, -165);
+        Size = UDim2.new(0, 232, 0, 330);
+        Visible = false;
+        ZIndex = 100;
+        Parent = ScreenGui;
+    });
+
+    local Inner = Library:Create('Frame', {
+        BackgroundColor3 = Library.MainColor;
+        BorderColor3 = Library.OutlineColor;
+        BorderMode = Enum.BorderMode.Inset;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 101;
+        Parent = Outer;
+    });
+
+    Library:AddToRegistry(Inner, {
+        BackgroundColor3 = 'MainColor';
+        BorderColor3 = 'OutlineColor';
+    }, true);
+
+    local TopLine = Library:Create('Frame', {
+        BackgroundColor3 = Library.AccentColor;
+        BorderSizePixel = 0;
+        Size = UDim2.new(1, 0, 0, 1);
+        ZIndex = 102;
+        Parent = Inner;
+    });
+
+    Library:AddToRegistry(TopLine, {
+        BackgroundColor3 = 'AccentColor';
+    }, true);
+
+    Refs.Title = Library:CreateLabel2({
+        Position = UDim2.fromOffset(6, 4);
+        Size = UDim2.new(0.5, -6, 0, 16);
+        Text = 'Colorpicker';
+        TextSize = 14;
+        TextXAlignment = Enum.TextXAlignment.Left;
+        ZIndex = 103;
+        Parent = Inner;
+    });
+
+    Refs.Flag = Library:CreateLabel({
+        Position = UDim2.new(0.5, 0, 0, 4);
+        Size = UDim2.new(0.5, -6, 0, 16);
+        Text = 'flagname';
+        TextSize = 14;
+        TextXAlignment = Enum.TextXAlignment.Right;
+        ZIndex = 103;
+        Parent = Inner;
+    });
+
+    local SatVibOuter = Library:Create('Frame', {
+        BorderColor3 = Color3.new(0, 0, 0);
+        Position = UDim2.fromOffset(4, 24);
+        Size = UDim2.fromOffset(224, 180);
+        ZIndex = 103;
+        Parent = Inner;
+    });
+
+    local SatVibInner = Library:Create('Frame', {
+        BackgroundColor3 = Library.BackgroundColor;
+        BorderColor3 = Library.OutlineColor;
+        BorderMode = Enum.BorderMode.Inset;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 104;
+        Parent = SatVibOuter;
+    });
+
+    Library:AddToRegistry(SatVibInner, {
+        BackgroundColor3 = 'BackgroundColor';
+        BorderColor3 = 'OutlineColor';
+    }, true);
+
+    Refs.SatVibMap = Library:Create('ImageLabel', {
+        BorderSizePixel = 0;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 105;
+        Image = 'rbxassetid://4155801252';
+        Parent = SatVibInner;
+    });
+
+    local HueOuter = Library:Create('Frame', {
+        BorderColor3 = Color3.new(0, 0, 0);
+        Position = UDim2.fromOffset(4, 210);
+        Size = UDim2.new(1, -8, 0, 12);
+        ZIndex = 103;
+        Parent = Inner;
+    });
+
+    Refs.HueInner = Library:Create('Frame', {
+        BackgroundColor3 = Color3.new(1, 1, 1);
+        BorderSizePixel = 0;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 104;
+        Parent = HueOuter;
+    });
+
+    local HueSequence = {};
+    for Hue = 0, 1, 0.1 do
+        table.insert(HueSequence, ColorSequenceKeypoint.new(Hue, Color3.fromHSV(Hue, 1, 1)));
+    end;
+
+    Library:Create('UIGradient', {
+        Color = ColorSequence.new(HueSequence);
+        Rotation = 0;
+        Parent = Refs.HueInner;
+    });
+
+    local AlphaOuter = Library:Create('Frame', {
+        BorderColor3 = Color3.new(0, 0, 0);
+        Position = UDim2.fromOffset(4, 228);
+        Size = UDim2.new(1, -8, 0, 12);
+        ZIndex = 103;
+        Parent = Inner;
+    });
+
+    Refs.AlphaInner = Library:Create('Frame', {
+        BackgroundColor3 = Color3.new(1, 1, 1);
+        BorderSizePixel = 0;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 104;
+        Parent = AlphaOuter;
+    });
+
+    Library:Create('UIGradient', {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+            ColorSequenceKeypoint.new(1, Color3.new(0, 0, 0)),
+        });
+        Rotation = 0;
+        Parent = Refs.AlphaInner;
+    });
+
+    local function CreateInputBox(Name, Index)
+        local BoxOuter = Library:Create('Frame', {
+            BorderColor3 = Color3.new(0, 0, 0);
+            Position = UDim2.fromOffset(4 + ((Index - 1) * 56), 246);
+            Size = UDim2.fromOffset(52, 18);
+            ZIndex = 103;
+            Parent = Inner;
+        });
+
+        local BoxInner = Library:Create('Frame', {
+            BackgroundColor3 = Library.MainColor;
+            BorderColor3 = Library.OutlineColor;
+            BorderMode = Enum.BorderMode.Inset;
+            Size = UDim2.new(1, 0, 1, 0);
+            ZIndex = 104;
+            Parent = BoxOuter;
+        });
+
+        Library:AddToRegistry(BoxInner, {
+            BackgroundColor3 = 'MainColor';
+            BorderColor3 = 'OutlineColor';
+        }, true);
+
+        local Box = Library:Create('TextBox', {
+            BackgroundTransparency = 1;
+            Size = UDim2.new(1, -4, 1, 0);
+            Position = UDim2.fromOffset(2, 0);
+            Font = Enum.Font.Code;
+            Text = '';
+            TextColor3 = Library.FontColor;
+            TextSize = 13;
+            TextStrokeTransparency = 0;
+            TextXAlignment = Enum.TextXAlignment.Center;
+            ClearTextOnFocus = false;
+            ZIndex = 105;
+            Parent = BoxInner;
+        });
+
+        Library:AddToRegistry(Box, {
+            TextColor3 = 'FontColor';
+        }, true);
+
+        Refs[Name] = Box;
+        return Box;
+    end;
+
+    CreateInputBox('RBox', 1);
+    CreateInputBox('GBox', 2);
+    CreateInputBox('BBox', 3);
+    CreateInputBox('HexBox', 4);
+
+    local function CreatePickerButton(Text, Position, Size, Callback)
+        local ButtonOuter = Library:Create('Frame', {
+            BorderColor3 = Color3.new(0, 0, 0);
+            Position = Position;
+            Size = Size;
+            ZIndex = 103;
+            Parent = Inner;
+        });
+
+        local ButtonInner = Library:Create('Frame', {
+            BackgroundColor3 = Library.MainColor;
+            BorderColor3 = Library.OutlineColor;
+            BorderMode = Enum.BorderMode.Inset;
+            Size = UDim2.new(1, 0, 1, 0);
+            ZIndex = 104;
+            Parent = ButtonOuter;
+        });
+
+        Library:AddToRegistry(ButtonInner, {
+            BackgroundColor3 = 'MainColor';
+            BorderColor3 = 'OutlineColor';
+        }, true);
+
+        Library:CreateLabel({
+            Size = UDim2.new(1, 0, 1, 0);
+            Text = Text;
+            TextSize = 14;
+            ZIndex = 105;
+            Parent = ButtonInner;
+        });
+
+        Library:OnHighlight(ButtonOuter, ButtonOuter,
+            { BorderColor3 = 'AccentColor' },
+            { BorderColor3 = 'Black' }
+        );
+
+        ButtonOuter.InputBegan:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                Callback();
+            end;
+        end);
+
+        return ButtonOuter;
+    end;
+
+    CreatePickerButton('Copy', UDim2.fromOffset(4, 270), UDim2.fromOffset(110, 20), function()
+        local Picker = Library.ActiveColorPicker;
+        if Picker then
+            Library.ColorClipboard = Picker.Value;
+            Library:Notify('Copied color', 2);
+        end;
+    end);
+
+    CreatePickerButton('Paste', UDim2.fromOffset(118, 270), UDim2.fromOffset(110, 20), function()
+        local Picker = Library.ActiveColorPicker;
+        if Picker and Library.ColorClipboard then
+            Picker:SetValueRGB(Library.ColorClipboard);
+            Library:RefreshColorPickerUI();
+            Library:AttemptSave();
+        end;
+    end);
+
+    CreatePickerButton('Confirm', UDim2.fromOffset(4, 296), UDim2.new(1, -8, 0, 22), function()
+        Library:HideColorPicker();
+        Library:AttemptSave();
+    end);
+
+    Refs.SatVibMap.InputBegan:Connect(function(Input)
+        local Picker = Library.ActiveColorPicker;
+        if not Picker or Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+            return;
+        end;
+
+        while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+            local Map = Refs.SatVibMap;
+            local MinX = Map.AbsolutePosition.X;
+            local MaxX = MinX + Map.AbsoluteSize.X;
+            local MinY = Map.AbsolutePosition.Y;
+            local MaxY = MinY + Map.AbsoluteSize.Y;
+
+            Picker.Sat = math.clamp((Mouse.X - MinX) / (MaxX - MinX), 0, 1);
+            Picker.Vib = 1 - math.clamp((Mouse.Y - MinY) / (MaxY - MinY), 0, 1);
+            Picker:Display();
+            Library:RefreshColorPickerUI();
+
+            RenderStepped:Wait();
+        end;
+
+        Library:AttemptSave();
+    end);
+
+    Refs.HueInner.InputBegan:Connect(function(Input)
+        local Picker = Library.ActiveColorPicker;
+        if not Picker or Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+            return;
+        end;
+
+        while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
+            local HueBar = Refs.HueInner;
+            local MinX = HueBar.AbsolutePosition.X;
+            local MaxX = MinX + HueBar.AbsoluteSize.X;
+
+            Picker.Hue = math.clamp((Mouse.X - MinX) / (MaxX - MinX), 0, 1);
+            Picker:Display();
+            Library:RefreshColorPickerUI();
+
+            RenderStepped:Wait();
+        end;
+
+        Library:AttemptSave();
+    end);
+
+    local function ApplyInputColor()
+        local Picker = Library.ActiveColorPicker;
+        if not Picker then
+            return;
+        end;
+
+        local r = tonumber(Refs.RBox.Text);
+        local g = tonumber(Refs.GBox.Text);
+        local b = tonumber(Refs.BBox.Text);
+
+        if r and g and b then
+            Picker:SetHSVFromRGB(Color3.fromRGB(r, g, b));
+            Picker:Display();
+            Library:RefreshColorPickerUI();
+            return;
+        end;
+
+        local hex = Refs.HexBox.Text:gsub('#', '');
+        local success, color = pcall(Color3.fromHex, hex);
+        if success and typeof(color) == 'Color3' then
+            Picker:SetHSVFromRGB(color);
+            Picker:Display();
+            Library:RefreshColorPickerUI();
+        end;
+    end;
+
+    for _, Box in next, { Refs.RBox, Refs.GBox, Refs.BBox, Refs.HexBox } do
+        Box.FocusLost:Connect(function(enter)
+            if enter then
+                ApplyInputColor();
+                Library:AttemptSave();
+            end;
+        end);
+    end;
+
+    Library:GiveSignal(InputService.InputBegan:Connect(function(Input)
+        if Input.UserInputType ~= Enum.UserInputType.MouseButton1 or not Outer.Visible then
+            return;
+        end;
+
+        if Library:IsMouseOverFrame(Outer) then
+            return;
+        end;
+
+        local OverSwatch = false;
+        for _, Option in next, Options do
+            if Option.Type == 'ColorPicker' and Option.DisplayFrame and Library:IsMouseOverFrame(Option.DisplayFrame) then
+                OverSwatch = true;
+                break;
+            end;
+        end;
+
+        if not OverSwatch then
+            Library:HideColorPicker();
+        end;
+    end));
+
+    Library.ColorPickerOuter = Outer;
+    Library:MakeDraggable(Outer, 40);
+end;
+
+function Library:PositionColorPicker()
+    if not Library.ColorPickerOuter then
+        return;
+    end;
+
+    local Holder = Library.WindowHolder;
+    if Holder and Holder.Visible then
+        local Position = Holder.AbsolutePosition;
+        local Size = Holder.AbsoluteSize;
+        Library.ColorPickerOuter.Position = UDim2.fromOffset(Position.X + Size.X + 12, Position.Y);
+    end;
+end;
+
+function Library:RefreshColorPickerUI()
+    local Picker = Library.ActiveColorPicker;
+    local Refs = Library.ColorPickerRefs;
+
+    if not Picker or not Refs then
+        return;
+    end;
+
+    Refs.Flag.Text = Picker.Flag or Picker.Title or 'flagname';
+    Refs.SatVibMap.BackgroundColor3 = Color3.fromHSV(Picker.Hue, 1, 1);
+    Refs.RBox.Text = tostring(math.floor(Picker.Value.R * 255));
+    Refs.GBox.Text = tostring(math.floor(Picker.Value.G * 255));
+    Refs.BBox.Text = tostring(math.floor(Picker.Value.B * 255));
+    Refs.HexBox.Text = Picker.Value:ToHex():upper();
+end;
+
+function Library:ShowColorPicker(ColorPicker)
+    Library:InitColorPickerWindow();
+
+    if Library.ActiveColorPicker and Library.ActiveColorPicker ~= ColorPicker then
+        Library.ActiveColorPicker:Display();
+    end;
+
+    Library.ActiveColorPicker = ColorPicker;
+    ColorPicker:Display();
+    Library:RefreshColorPickerUI();
+    Library:PositionColorPicker();
+
+    Library.ColorPickerOuter.Visible = true;
+    Library.OpenedFrames[Library.ColorPickerOuter] = true;
+end;
+
+function Library:HideColorPicker()
+    if not Library.ColorPickerOuter then
+        return;
+    end;
+
+    Library.ColorPickerOuter.Visible = false;
+    Library.OpenedFrames[Library.ColorPickerOuter] = nil;
+    Library.ActiveColorPicker = nil;
+end;
+
+function Library:SetColorPickerVisibility(Bool)
+    Library:InitColorPickerWindow();
+    if not Bool then
+        Library:HideColorPicker();
+    end;
+end;
+
 function Library:SetWatermarkVisibility(Bool)
     Library.Watermark.Visible = Bool;
 end;
@@ -2590,7 +2772,7 @@ function Library:CreateWindow(...)
     });
 
     Library:Create('UIListLayout', {
-        Padding = UDim.new(0, 0);
+        Padding = UDim.new(0, 14);
         FillDirection = Enum.FillDirection.Horizontal;
         SortOrder = Enum.SortOrder.LayoutOrder;
         Parent = TabButtons;
@@ -2639,52 +2821,36 @@ function Library:CreateWindow(...)
 
         local TabButtonWidth = Library:GetTextBounds(Name, Enum.Font.Code, 16);
 
-        local TabButton = Library:Create('Frame', {
-            BackgroundColor3 = Library.BackgroundColor;
-            BorderColor3 = Library.OutlineColor;
-            Size = UDim2.new(0, TabButtonWidth + 8 + 8, 1, 0);
+        local TabButton = Library:Create('TextButton', {
+            AutoButtonColor = false;
+            BackgroundTransparency = 1;
+            BorderSizePixel = 0;
+            Size = UDim2.new(0, TabButtonWidth, 1, 0);
+            Text = '';
             ZIndex = 1;
             Parent = TabButtons;
         });
 
-        Library:AddToRegistry(TabButton, {
-            BackgroundColor3 = 'BackgroundColor';
-            BorderColor3 = 'OutlineColor';
-        });
-
         local TabButtonLabel = Library:CreateLabel({
-            Position = UDim2.new(0, 0, 0, 0);
-            Size = UDim2.new(1, 0, 1, -1);
+            Size = UDim2.new(1, 0, 1, 0);
             Text = Name;
-            ZIndex = 1;
+            TextSize = 16;
+            ZIndex = 2;
             Parent = TabButton;
         });
 
         local Highlight = Library:Create('Frame', {
             BackgroundColor3 = Library.AccentColor;
             BorderSizePixel = 0;
-            Size = UDim2.new(1.01, 0, 0, 1);
-            Position = UDim2.new(-0.01, 0, 0, -1);
+            Size = UDim2.new(1, 0, 0, 1);
+            Position = UDim2.new(0, 0, 1, -1);
+            Visible = false;
             ZIndex = 3;
             Parent = TabButton;
         });
 
         Library:AddToRegistry(Highlight, {
             BackgroundColor3 = 'AccentColor';
-        });
-
-        local Blocker = Library:Create('Frame', {
-            BackgroundColor3 = Library.SelectedTabColor;
-            BorderSizePixel = 0;
-            Position = UDim2.new(0, 0, 1, 0);
-            Size = UDim2.new(1, 0, 0, 1);
-            BackgroundTransparency = 1;
-            ZIndex = 3;
-            Parent = TabButton;
-        });
-
-        Library:AddToRegistry(Blocker, {
-            BackgroundColor3 = 'SelectedTabColor';
         });
 
         local TabFrame = Library:Create('Frame', {
@@ -2733,25 +2899,14 @@ function Library:CreateWindow(...)
             end;
 
             TabFrame.Visible = true;
-            Blocker.BackgroundTransparency = 0;
-            TabButton.BackgroundColor3 = Library.SelectedTabColor;
             TabButtonLabel.TextColor3 = Library.FontColor2;
-            Highlight.BackgroundColor3 = Library.AccentColor;
-            Highlight.ZIndex = 3;
             Highlight.Visible = true;
-            Library.RegistryMap[TabButton].Properties.BackgroundColor3 = 'SelectedTabColor';
-            TabFrame.Visible = true;
         end;
 
 
         function Tab:HideTab()
-            Blocker.BackgroundTransparency = 1;
-            TabButton.BackgroundColor3 = Library.BackgroundColor;
             TabButtonLabel.TextColor3 = Library.FontColor;
-            Highlight.BackgroundColor3 = Library.OutlineColor;
-            Highlight.ZIndex = 1;
             Highlight.Visible = false;
-            Library.RegistryMap[TabButton].Properties.BackgroundColor3 = 'BackgroundColor';
             TabFrame.Visible = false;
         end;
 
@@ -3083,6 +3238,10 @@ function Library:CreateWindow(...)
         Outer.Visible = not Outer.Visible;
         ModalElement.Modal = Outer.Visible;
 
+        if not Outer.Visible then
+            Library:HideColorPicker();
+        end
+
         local oIcon = Mouse.Icon;
         local State = InputService.MouseIconEnabled;
 
@@ -3116,16 +3275,18 @@ function Library:CreateWindow(...)
         end
 
         if Input:IsModifierKeyDown(Enum.ModifierKey.Ctrl) and Outer.Visible then
-            local HoveringColorPicker = nil
+            local HoveringColorPicker = Library.ActiveColorPicker
 
-            for i, colorPicker in next, Options do
-                if colorPicker.Type == 'ColorPicker' then
-                    local displayFrame = colorPicker.DisplayFrame
-                    local tabFrame = displayFrame and displayFrame:findFirstAncestor('TabFrame')
+            if not HoveringColorPicker then
+                for i, colorPicker in next, Options do
+                    if colorPicker.Type == 'ColorPicker' then
+                        local displayFrame = colorPicker.DisplayFrame
+                        local tabFrame = displayFrame and displayFrame:FindFirstAncestor('TabFrame')
 
-                    if tabFrame.Visible and Library:IsMouseOverFrame(colorPicker.DisplayFrame) then
-                        HoveringColorPicker = colorPicker
-                        break
+                        if tabFrame and tabFrame.Visible and Library:IsMouseOverFrame(colorPicker.DisplayFrame) then
+                            HoveringColorPicker = colorPicker
+                            break
+                        end
                     end
                 end
             end
@@ -3136,8 +3297,12 @@ function Library:CreateWindow(...)
 
             if Input.KeyCode == Enum.KeyCode.C then
                 Library.ColorClipboard = HoveringColorPicker.Value
+                Library:Notify('Copied color', 2)
             elseif Input.KeyCode == Enum.KeyCode.V and Library.ColorClipboard then
                 HoveringColorPicker:SetValueRGB(Library.ColorClipboard)
+                if Library.ActiveColorPicker == HoveringColorPicker then
+                    Library:RefreshColorPickerUI()
+                end
             end
         end
     end))
@@ -3145,6 +3310,7 @@ function Library:CreateWindow(...)
     if Config.AutoShow then task.spawn(Library.Toggle) end
 
     Window.Holder = Outer;
+    Library.WindowHolder = Outer;
 
     return Window;
 end;
