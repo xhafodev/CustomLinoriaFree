@@ -1297,14 +1297,14 @@ do
         function Button:AddButton(Text, Func)
             local SubButton = {}
 
-            ButtonOuter.Size = UDim2.new(0.5, -2, 0, 20)
+            ButtonOuter.Size = UDim2.new(0.5, -3, 0, 20)
             
             local Outer = ButtonOuter:Clone()
             local Inner = Outer.Frame;
             local Label = Inner:FindFirstChildWhichIsA('TextLabel')
 
             Outer.Position = UDim2.new(1, 2, 0, 0)
-            Outer.Size = UDim2.fromOffset(ButtonOuter.AbsoluteSize.X - 2, ButtonOuter.AbsoluteSize.Y)
+            Outer.Size = UDim2.new(1, 0, 0, 20)
             Outer.Parent = ButtonOuter
 
             Label.Text = Text;
@@ -3982,10 +3982,22 @@ function Library:ListLuaScripts()
 
     for _, Path in next, Files do
         if type(Path) == 'string' and Path:sub(-4):lower() == '.lua' then
-            local Name = Path:match('([^/\\]+)%.lua$');
+            local Pos = Path:find('.lua', 1, true);
+            local Start = Pos;
 
-            if Name then
-                table.insert(Scripts, Name);
+            if Start then
+                local Char = Path:sub(Start, Start);
+
+                while Char ~= '/' and Char ~= '\\' and Char ~= '' do
+                    Start = Start - 1;
+                    Char = Path:sub(Start, Start);
+                end;
+
+                local Name = Path:sub(Start + 1, Pos - 1);
+
+                if Name ~= '' then
+                    table.insert(Scripts, Name);
+                end;
             end;
         end;
     end;
@@ -4005,15 +4017,10 @@ function Library:SaveLuaScript(Name, Source)
     Library:BuildStorageFolders();
 
     local Path = Library.LuaFolder .. '/' .. Name .. '.lua';
-    local Ok, Err = pcall(writefile, Path, Source);
+    local Ok, Err = pcall(writefile, Path, tostring(Source or ''));
 
     if not Ok then
         Library:Notify('Failed to save script: ' .. tostring(Err), 4);
-        return false;
-    end;
-
-    if typeof(isfile) == 'function' and not isfile(Path) then
-        Library:Notify('Script save failed: file was not created', 4);
         return false;
     end;
 
@@ -4061,19 +4068,24 @@ function Library:DeleteLuaScript(Name)
     return false;
 end;
 
-function Library:RefreshLuaScriptList()
+function Library:RefreshLuaScriptList(SelectName)
     if not Options.LuaScriptList then
-        return;
+        return Library:ListLuaScripts();
     end;
 
     local Scripts = Library:ListLuaScripts();
-    Options.LuaScriptList:SetValues(Scripts);
+    Options.LuaScriptList.Values = Scripts;
+    Options.LuaScriptList:SetValues();
 
-    if Scripts[1] then
+    if SelectName and table.find(Scripts, SelectName) then
+        Options.LuaScriptList:SetValue(SelectName);
+    elseif Scripts[1] then
         Options.LuaScriptList:SetValue(Scripts[1]);
     else
         Options.LuaScriptList:SetValue(nil);
     end;
+
+    return Scripts;
 end;
 
 function Library:ExecuteLua(Source, ScriptName)
@@ -4150,8 +4162,7 @@ function Library:CreateLuaTab(Tab)
 
         if Saved then
             Library:Notify('Saved script: ' .. SavedName, 2);
-            Library:RefreshLuaScriptList();
-            Options.LuaScriptList:SetValue(SavedName);
+            Library:RefreshLuaScriptList(SavedName);
         end;
     end);
 
